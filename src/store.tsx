@@ -18,6 +18,8 @@ export function defaultConfig(): LeagueConfig {
     classicSlots: { P: 6, D: 8, C: 9, A: 6 },
     mantraGk: 6,
     mantraOutfield: 29,
+    budgetSplit: { P: 8, D: 20, C: 30, A: 42 },
+    mantraPlanSlots: { P: 6, D: 10, C: 12, A: 7 },
   }
 }
 
@@ -26,7 +28,11 @@ function initialState(): AppState {
     const raw = localStorage.getItem(STORAGE_KEY)
     if (raw) {
       const parsed = JSON.parse(raw) as AppState
-      if (parsed && parsed.config && Array.isArray(parsed.players)) return parsed
+      if (parsed && parsed.config && Array.isArray(parsed.players)) {
+        // Merge con i default: uno stato salvato da una versione precedente
+        // potrebbe non avere i campi aggiunti dopo.
+        return { ...parsed, config: { ...defaultConfig(), ...parsed.config } }
+      }
     }
   } catch {
     // stato corrotto o storage non disponibile: si riparte da zero

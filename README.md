@@ -23,10 +23,30 @@ Poi apri http://localhost:5173.
      filtri per ruolo/squadra, ordinamento per FVM/quotazione/nome, stella ★ per gli obiettivi.
    - **Dialog acquisto**: prezzo + assegnazione a una delle squadre (scorciatoie tasti 1-8),
      con prezzo suggerito, tuo prezzo massimo e offerta massima possibile.
-   - **La mia rosa**: raggruppata per ruolo; in Mantra i multiruolo appaiono in tutte le loro caselle.
+   - **Rosa**: raggruppata per ruolo; in Mantra i multiruolo appaiono in tutte le loro caselle.
    - **Squadre**: budget residuo, slot e rosa di tutti i partecipanti.
-   - **Obiettivi**: lista dei preferiti con prezzo massimo e note.
+   - **Obiettivi**: piano di spesa per reparto + lista dei target (vedi sotto).
+   - **Scarsità**: quanto vale ancora il mercato e cosa resta per ruolo (vedi sotto).
    - **Annulla ultimo**, **Backup/Ripristina** (JSON) dalla barra in alto.
+
+## Piano di spesa e obiettivi
+
+Ripartizione del budget per reparto in percentuale (P/D/C/A, basata sul ruolo Classic anche in Mantra,
+come il listone). Per ogni reparto: crediti allocati, spesi e liberi, slot da riempire, obiettivi in lista
+e somma dei loro prezzi massimi, con avviso quando i target valgono più del budget del reparto o quando
+gli obiettivi non bastano a coprire gli slot. In Mantra i giocatori previsti per reparto sono una stima
+di pianificazione (i 29 di movimento non hanno quote fisse per ruolo).
+
+## Scarsità
+
+- **Mercato**: crediti e slot ancora in gioco, media per slot della lega, e quanto vale uno slot per te
+  rispetto agli avversari — dice se puoi permetterti di alzare o se devi cercare occasioni.
+- **Per ruolo**: i giocatori sono divisi in fasce dimensionate sul numero di squadre (Top = uno a testa,
+  Buoni = altrettanti, Medi = il doppio) e per ognuna vedi quanti ne restano. In Classic è indicato anche
+  quanti slot deve ancora riempire la lega in quel ruolo; in Mantra solo per i portieri, perché gli altri
+  ruoli si sovrappongono. Con "ordina per scarsità" i ruoli a rischio salgono in cima.
+- Nel dialog d'acquisto compare la posizione del giocatore tra i disponibili del suo ruolo
+  (es. "3° miglior W su 42 disponibili").
 
 ## Prezzo suggerito
 

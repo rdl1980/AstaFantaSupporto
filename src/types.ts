@@ -49,6 +49,10 @@ export interface LeagueConfig {
   mantraGk: number
   /** Slot giocatori di movimento in modalità Mantra */
   mantraOutfield: number
+  /** Ripartizione del budget per reparto, in percentuale (somma attesa: 100) */
+  budgetSplit: Record<ClassicRole, number>
+  /** Quanti giocatori conto di prendere per reparto in Mantra (solo pianificazione; P non usato) */
+  mantraPlanSlots: Record<ClassicRole, number>
 }
 
 export interface AppState {

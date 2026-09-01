@@ -3,11 +3,12 @@ import { teamStats, useStore } from '../store'
 import type { AppState, Player } from '../types'
 import { Listone } from './Listone'
 import { MyRoster } from './MyRoster'
+import { PrepPanel } from './PrepPanel'
 import { PurchaseDialog } from './PurchaseDialog'
-import { TargetsPanel } from './TargetsPanel'
+import { ScarcityPanel } from './ScarcityPanel'
 import { TeamsPanel } from './TeamsPanel'
 
-type Tab = 'rosa' | 'squadre' | 'obiettivi'
+type Tab = 'rosa' | 'squadre' | 'obiettivi' | 'scarsita'
 
 export function AuctionScreen({ onSetup }: { onSetup: () => void }) {
   const { state, dispatch, myTeamId } = useStore()
@@ -109,7 +110,7 @@ export function AuctionScreen({ onSetup }: { onSetup: () => void }) {
         <div className="col-side">
           <div className="tabs">
             <button className={tab === 'rosa' ? 'active' : ''} onClick={() => setTab('rosa')}>
-              La mia rosa
+              Rosa
             </button>
             <button className={tab === 'squadre' ? 'active' : ''} onClick={() => setTab('squadre')}>
               Squadre
@@ -117,11 +118,15 @@ export function AuctionScreen({ onSetup }: { onSetup: () => void }) {
             <button className={tab === 'obiettivi' ? 'active' : ''} onClick={() => setTab('obiettivi')}>
               Obiettivi ★
             </button>
+            <button className={tab === 'scarsita' ? 'active' : ''} onClick={() => setTab('scarsita')}>
+              Scarsità
+            </button>
           </div>
           <div className="tab-content">
             {tab === 'rosa' && <MyRoster onPick={setDialogPlayer} />}
             {tab === 'squadre' && <TeamsPanel onPick={setDialogPlayer} />}
-            {tab === 'obiettivi' && <TargetsPanel onPick={setDialogPlayer} />}
+            {tab === 'obiettivi' && <PrepPanel onPick={setDialogPlayer} />}
+            {tab === 'scarsita' && <ScarcityPanel onPick={setDialogPlayer} />}
           </div>
         </div>
       </div>

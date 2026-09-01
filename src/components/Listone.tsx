@@ -1,7 +1,7 @@
 import { useMemo, useRef, useState } from 'react'
+import { rolesForMode } from '../analysis'
 import { playerFvm, playerQt, useStore } from '../store'
 import type { Player } from '../types'
-import { CLASSIC_ROLE_ORDER, MANTRA_ROLE_ORDER } from '../types'
 
 function normalize(s: string): string {
   return s
@@ -28,13 +28,7 @@ export function Listone({ onPick }: { onPick: (p: Player) => void }) {
     [state.players],
   )
 
-  const roles: string[] = useMemo(() => {
-    if (config.mode === 'classic') return CLASSIC_ROLE_ORDER
-    const present = new Set(state.players.flatMap((p) => p.rm))
-    const known = MANTRA_ROLE_ORDER.filter((r) => present.has(r))
-    const unknown = [...present].filter((r) => !MANTRA_ROLE_ORDER.includes(r)).sort()
-    return [...known, ...unknown]
-  }, [config.mode, state.players])
+  const roles = useMemo(() => rolesForMode(state.players, config.mode), [state.players, config.mode])
 
   const filtered = useMemo(() => {
     const q = normalize(query.trim())

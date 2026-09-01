@@ -1,4 +1,5 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import { rankAmongRole } from '../analysis'
 import { playerQt, teamStats, useStore } from '../store'
 import type { Player } from '../types'
 
@@ -40,6 +41,12 @@ export function PurchaseDialog({ player, onClose }: { player: Player; onClose: (
   }, [onClose, state.config.teams])
 
   const roleBadges = state.config.mode === 'mantra' ? player.rm : [player.r]
+  const ranks = useMemo(
+    () => roleBadges.map((r) => ({ role: r, ...rankAmongRole(state, player, r) })),
+    // roleBadges deriva da player e config: ricalcolare su questi due basta
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [state, player],
+  )
 
   return (
     <div className="dialog-backdrop" onMouseDown={(e) => e.target === e.currentTarget && onClose()}>
@@ -79,6 +86,18 @@ export function PurchaseDialog({ player, onClose }: { player: Player; onClose: (
             <span className="muted">Tua offerta max</span> <b>{myStats.maxBid}</b>
           </div>
         </div>
+
+        {/* Per un giocatore già assegnato il ranking non serve alla decisione */}
+        {!existing && (
+          <div className="dialog-ranks small">
+            {ranks.map((r) => (
+              <span key={r.role}>
+                <b>{r.rank}°</b> miglior <span className={`badge role-${r.role}`}>{r.role}</span>{' '}
+                <span className="muted">su {r.total} disponibili</span>
+              </span>
+            ))}
+          </div>
+        )}
 
         <label className="price-label">
           Prezzo di acquisto

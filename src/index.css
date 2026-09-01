@@ -386,9 +386,192 @@ td.status { font-size: 12px; white-space: nowrap; }
 .team-nums { display: flex; gap: 8px; align-items: baseline; white-space: nowrap; }
 .team-roles { margin: 4px 0; }
 
-/* ---------- targets ---------- */
-.targets-panel .max-price { width: 70px; text-align: right; }
-.targets-panel .note { width: 100%; min-width: 90px; }
+/* ---------- scarsità ---------- */
+.market-box {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px 14px;
+  margin-bottom: 10px;
+}
+
+.market-row { display: flex; gap: 18px; flex-wrap: wrap; }
+.market-row .stat { flex-direction: column; gap: 0; align-items: flex-start; }
+.market-edge { margin: 8px 0 0; font-size: 12px; }
+
+.alert {
+  background: rgba(240, 160, 75, 0.12);
+  border: 1px solid var(--warn);
+  color: var(--warn);
+  border-radius: 8px;
+  padding: 7px 12px;
+  margin: 0 0 10px;
+  font-size: 13px;
+}
+
+.scarcity-sort { margin-bottom: 8px; }
+
+.scarcity-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 8px;
+}
+
+.scarcity-card {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--border);
+  border-radius: 8px;
+  padding: 8px 10px;
+}
+
+.scarcity-card.ok { border-left-color: var(--green); }
+.scarcity-card.low { border-left-color: var(--warn); }
+.scarcity-card.critical { border-left-color: var(--red); }
+
+.scarcity-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 6px;
+}
+
+.scarcity-head .demand { margin-left: auto; white-space: nowrap; }
+
+.tiers { display: flex; flex-direction: column; gap: 3px; }
+
+.tier { display: flex; align-items: center; gap: 6px; }
+.tier-label { width: 42px; flex: none; }
+.tier-count { width: 42px; flex: none; text-align: right; }
+
+.tier-bar {
+  flex: 1;
+  height: 7px;
+  background: var(--bg);
+  border-radius: 4px;
+  overflow: hidden;
+  display: block;
+}
+
+.tier-bar.wide { margin: 4px 0; }
+
+.tier-fill {
+  display: block;
+  height: 100%;
+  border-radius: 4px;
+  background: var(--green);
+  transition: width 0.2s;
+}
+
+.tier-fill.low { background: var(--warn); }
+.tier-fill.critical { background: var(--red); }
+
+.top-left { margin-top: 6px; line-height: 1.5; }
+.link { color: var(--accent); cursor: pointer; }
+.link:hover { text-decoration: underline; }
+
+/* ---------- preparazione / obiettivi ---------- */
+.quick-add { position: relative; margin-bottom: 10px; }
+.quick-add > input { width: 100%; }
+
+.quick-results {
+  list-style: none;
+  margin: 4px 0 0;
+  padding: 4px;
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+
+.quick-results li {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  padding: 3px 4px;
+}
+
+.small-btn { padding: 2px 8px; font-size: 12px; }
+
+.split-box {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px 12px;
+  margin-bottom: 10px;
+}
+
+.split-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 8px;
+}
+
+.split-row {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  align-items: center;
+  margin-top: 6px;
+}
+
+.split-cell { display: flex; align-items: center; gap: 4px; }
+.split-cell input { width: 58px; text-align: right; }
+.plan-label { width: 100%; }
+
+.reparto-card {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 8px 12px;
+  margin-bottom: 8px;
+}
+
+.reparto-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.reparto-budget { margin-left: auto; white-space: nowrap; }
+.reparto-meta { margin: 2px 0; }
+
+.target-list {
+  list-style: none;
+  margin: 6px 0 0;
+  padding: 0;
+}
+
+.target-list li {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 0;
+  border-top: 1px solid #202942;
+  flex-wrap: wrap;
+}
+
+.target-list li.sold { opacity: 0.45; }
+.target-list li.sold .t-name { text-decoration: line-through; }
+.target-list li.won .t-name { color: var(--green); }
+
+.t-star { color: var(--gold); cursor: pointer; }
+.t-name { flex: 1; min-width: 110px; cursor: pointer; font-weight: 600; }
+.t-sugg { width: 40px; text-align: right; }
+.t-max { width: 62px; text-align: right; padding: 2px 5px; }
+.t-status { min-width: 62px; text-align: right; }
+.t-note { flex-basis: 100%; padding: 2px 6px; font-size: 12px; }
+
+/* ---------- dialog: scarsità ---------- */
+.dialog-ranks {
+  display: flex;
+  gap: 14px;
+  flex-wrap: wrap;
+  margin-bottom: 10px;
+}
 
 /* ---------- dialog ---------- */
 .dialog-backdrop {

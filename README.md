@@ -29,6 +29,14 @@ Poi apri http://localhost:5173.
    - **Scarsità**: quanto vale ancora il mercato e cosa resta per ruolo (vedi sotto).
    - **Annulla ultimo**, **Backup/Ripristina** (JSON) dalla barra in alto.
 
+## Dove finiscono i dati
+
+Tutto è salvato nel `localStorage` del browser, sotto la chiave `asta-fanta-state-v1`:
+configurazione della lega, listone importato, acquisti e obiettivi. Nessun server, nessun
+account. Il `localStorage` è separato per indirizzo: i dati su `localhost:5173` e quelli
+sulla versione pubblicata su GitHub Pages sono due archivi distinti. Per spostarli usa
+**⬇ Backup** e **⬆ Ripristina** dalla barra in alto.
+
 ## Piano di spesa e obiettivi
 
 Ripartizione del budget per reparto in percentuale (P/D/C/A, basata sul ruolo Classic anche in Mantra,
@@ -36,6 +44,11 @@ come il listone). Per ogni reparto: crediti allocati, spesi e liberi, slot da ri
 e somma dei loro prezzi massimi, con avviso quando i target valgono più del budget del reparto o quando
 gli obiettivi non bastano a coprire gli slot. In Mantra i giocatori previsti per reparto sono una stima
 di pianificazione (i 29 di movimento non hanno quote fisse per ruolo).
+
+Con **Importa obiettivi da lista** puoi incollare un elenco di nomi (uno per riga, con prezzo massimo
+opzionale dopo `=`, `:` o `|`) preso da qualsiasi altra fonte: i nomi vengono riconosciuti contro il
+listone anche se scritti in forma diversa — "Lautaro Martinez" trova `Martinez L.`, "Josep Martinez"
+trova `Martinez Jo.` — e le righe ambigue o non riconosciute restano lì per la conferma manuale.
 
 ## Scarsità
 

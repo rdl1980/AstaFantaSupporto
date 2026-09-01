@@ -494,6 +494,58 @@ td.status { font-size: 12px; white-space: nowrap; }
 
 .small-btn { padding: 2px 8px; font-size: 12px; }
 
+/* ---------- import obiettivi ---------- */
+.import-toggle { margin-bottom: 8px; }
+
+.import-box {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px 12px;
+  margin-bottom: 10px;
+}
+
+.import-text {
+  width: 100%;
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 6px 8px;
+  font: inherit;
+  color: inherit;
+  resize: vertical;
+}
+
+.import-results {
+  list-style: none;
+  margin: 6px 0;
+  padding: 0;
+  max-height: 320px;
+  overflow-y: auto;
+}
+
+.import-results li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 3px 0;
+  border-top: 1px solid #202942;
+}
+
+.import-results li.ambiguous { background: rgba(240, 160, 75, 0.08); }
+.import-results li.notfound { background: rgba(225, 91, 100, 0.08); }
+
+.import-raw {
+  width: 150px;
+  flex: none;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.import-results select { flex: 1; min-width: 0; }
+.import-price { width: 58px; flex: none; text-align: right; }
+
 .split-box {
   background: var(--bg2);
   border: 1px solid var(--border);

@@ -49,6 +49,7 @@ export type Action =
   | { type: 'removePurchase'; playerId: number }
   | { type: 'undoLastPurchase' }
   | { type: 'toggleTarget'; playerId: number }
+  | { type: 'addTargets'; items: { playerId: number; maxPrice: number | null }[] }
   | { type: 'setTarget'; playerId: number; patch: Partial<Target> }
   | { type: 'resetAuction' }
   | { type: 'fullReset' }
@@ -117,6 +118,19 @@ function reducer(state: AppState, action: Action): AppState {
       const targets = { ...state.targets }
       if (targets[action.playerId]) delete targets[action.playerId]
       else targets[action.playerId] = { playerId: action.playerId, maxPrice: null, note: '' }
+      return { ...state, targets }
+    }
+    case 'addTargets': {
+      const targets = { ...state.targets }
+      for (const item of action.items) {
+        const existing = targets[item.playerId]
+        targets[item.playerId] = {
+          playerId: item.playerId,
+          // Un prezzo già impostato a mano non viene sovrascritto da un import senza prezzo
+          maxPrice: item.maxPrice ?? existing?.maxPrice ?? null,
+          note: existing?.note ?? '',
+        }
+      }
       return { ...state, targets }
     }
     case 'setTarget': {

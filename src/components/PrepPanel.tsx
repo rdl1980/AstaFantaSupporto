@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react'
 import { repartoPlans } from '../analysis'
 import { playerFvm, useStore } from '../store'
+import { ImportTargets } from './ImportTargets'
 import type { ClassicRole, Player, Target } from '../types'
 import { CLASSIC_ROLE_ORDER } from '../types'
 
@@ -88,6 +89,8 @@ export function PrepPanel({ onPick }: { onPick: (p: Player) => void }) {
           </ul>
         )}
       </div>
+
+      <ImportTargets />
 
       <div className="split-box">
         <div className="split-head">

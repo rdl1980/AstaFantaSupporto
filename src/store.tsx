@@ -51,7 +51,10 @@ export type Action =
   | { type: 'removePurchase'; playerId: number }
   | { type: 'undoLastPurchase' }
   | { type: 'toggleTarget'; playerId: number }
-  | { type: 'addTargets'; items: { playerId: number; maxPrice: number | null }[] }
+  | {
+      type: 'addTargets'
+      items: { playerId: number; maxPrice: number | null; priority: number | null; note: string }[]
+    }
   | { type: 'setTarget'; playerId: number; patch: Partial<Target> }
   | { type: 'resetAuction' }
   | { type: 'fullReset' }
@@ -119,7 +122,7 @@ function reducer(state: AppState, action: Action): AppState {
     case 'toggleTarget': {
       const targets = { ...state.targets }
       if (targets[action.playerId]) delete targets[action.playerId]
-      else targets[action.playerId] = { playerId: action.playerId, maxPrice: null, note: '' }
+      else targets[action.playerId] = { playerId: action.playerId, maxPrice: null, note: '', priority: null }
       return { ...state, targets }
     }
     case 'addTargets': {
@@ -128,15 +131,21 @@ function reducer(state: AppState, action: Action): AppState {
         const existing = targets[item.playerId]
         targets[item.playerId] = {
           playerId: item.playerId,
-          // Un prezzo già impostato a mano non viene sovrascritto da un import senza prezzo
+          // Un valore già impostato a mano non viene sovrascritto da un import che non lo porta
           maxPrice: item.maxPrice ?? existing?.maxPrice ?? null,
-          note: existing?.note ?? '',
+          priority: item.priority ?? existing?.priority ?? null,
+          note: item.note || existing?.note || '',
         }
       }
       return { ...state, targets }
     }
     case 'setTarget': {
-      const existing = state.targets[action.playerId] ?? { playerId: action.playerId, maxPrice: null, note: '' }
+      const existing = state.targets[action.playerId] ?? {
+        playerId: action.playerId,
+        maxPrice: null,
+        note: '',
+        priority: null,
+      }
       return { ...state, targets: { ...state.targets, [action.playerId]: { ...existing, ...action.patch } } }
     }
     case 'resetAuction':

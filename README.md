@@ -45,10 +45,36 @@ e somma dei loro prezzi massimi, con avviso quando i target valgono più del bud
 gli obiettivi non bastano a coprire gli slot. In Mantra i giocatori previsti per reparto sono una stima
 di pianificazione (i 29 di movimento non hanno quote fisse per ruolo).
 
-Con **Importa obiettivi da lista** puoi incollare un elenco di nomi (uno per riga, con prezzo massimo
-opzionale dopo `=`, `:` o `|`) preso da qualsiasi altra fonte: i nomi vengono riconosciuti contro il
-listone anche se scritti in forma diversa — "Lautaro Martinez" trova `Martinez L.`, "Josep Martinez"
-trova `Martinez Jo.` — e le righe ambigue o non riconosciute restano lì per la conferma manuale.
+Gli obiettivi hanno una **priorità** (Prio1, Prio2, Low, Scommessa) che ne determina l'ordinamento
+dentro ogni reparto.
+
+### Import e export degli obiettivi
+
+**⬍ Importa obiettivi** accetta due formati, riconosciuti automaticamente:
+
+- **lista di nomi**, uno per riga, con prezzo massimo opzionale dopo `=`, `:` o `|`;
+- **JSON**, incollato o caricato da file con *📂 Carica file JSON*.
+
+I nomi vengono riconosciuti contro il listone anche se scritti in forma diversa: "Lautaro Martinez"
+trova `Martinez L.`, "Josep Martinez" trova `Martinez Jo.`. Le voci ambigue mostrano una tendina di
+scelta, quelle non riconosciute restano segnalate senza bloccare le altre.
+
+Il formato JSON è tollerante: un array semplice oppure un oggetto con la chiave `targets`, e ogni voce
+può essere una stringa o un oggetto. `priority` accetta sia numeri (1–4) sia etichette (`prio1`, `low`,
+`scommessa`). Con `id` si punta esattamente a un giocatore del listone saltando il riconoscimento.
+
+```json
+{
+  "targets": [
+    { "name": "Calhanoglu", "priority": 1, "maxPrice": 300, "note": "rigorista" },
+    "Dimarco",
+    { "id": 254, "priority": 2 }
+  ]
+}
+```
+
+**⬇ Esporta JSON** scarica gli obiettivi correnti nello stesso formato, arricchiti con id, squadra e
+ruoli, così puoi rileggerli o riusarli in un'altra lega.
 
 ## Moduli (solo Mantra)
 

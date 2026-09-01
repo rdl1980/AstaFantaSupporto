@@ -59,24 +59,32 @@ function score(p: Player, lineNorm: string, lineTokens: string[]): number {
   return s
 }
 
-export interface ParsedLine {
-  raw: string
+/** Un obiettivo da riconoscere, da qualsiasi fonte (riga di testo o voce JSON). */
+export interface TargetDraft {
+  /** Testo mostrato nella revisione */
+  label: string
+  /** Nome da cercare nel listone */
   query: string
   maxPrice: number | null
+  priority: number | null
+  note: string
+  /** Id del listone: se presente si salta il riconoscimento per nome */
+  id?: number
 }
 
 /** Accetta "Nome", "Nome = 250", "Nome: 250", "Nome | 250", "Nome - 250". */
-export function parseLine(raw: string): ParsedLine | null {
+export function parseLine(raw: string): TargetDraft | null {
   const line = raw.trim()
   if (!line) return null
   const m = line.match(/^(.+?)\s*(?:[=:|]|\s-)\s*(\d{1,4})\s*$/)
-  if (m) return { raw: line, query: m[1].trim(), maxPrice: Number(m[2]) }
-  return { raw: line, query: line, maxPrice: null }
+  if (m) return { label: line, query: m[1].trim(), maxPrice: Number(m[2]), priority: null, note: '' }
+  return { label: line, query: line, maxPrice: null, priority: null, note: '' }
 }
 
 export type MatchStatus = 'ok' | 'ambiguous' | 'notfound'
 
-export interface MatchResult extends ParsedLine {
+export interface MatchResult {
+  draft: TargetDraft
   status: MatchStatus
   /** Migliore corrispondenza (già selezionata) o null se non trovata */
   best: Player | null
@@ -84,32 +92,49 @@ export interface MatchResult extends ParsedLine {
   candidates: Player[]
 }
 
-export function matchLines(text: string, players: Player[]): MatchResult[] {
+export function matchDrafts(drafts: TargetDraft[], players: Player[]): MatchResult[] {
   const pool = players.filter((p) => !p.ceduto)
+  const byId = new Map(pool.map((p) => [p.id, p]))
   const out: MatchResult[] = []
-  for (const raw of text.split(/\r?\n/)) {
-    const parsed = parseLine(raw)
-    if (!parsed) continue
-    const lineNorm = norm(parsed.query)
-    const lineTokens = lineNorm.split(' ').filter(Boolean)
 
+  for (const draft of drafts) {
+    if (draft.id != null) {
+      const p = byId.get(draft.id)
+      out.push(
+        p
+          ? { draft, status: 'ok', best: p, candidates: [p] }
+          : { draft, status: 'notfound', best: null, candidates: [] },
+      )
+      continue
+    }
+
+    const lineNorm = norm(draft.query)
+    const lineTokens = lineNorm.split(' ').filter(Boolean)
     const scored = pool
       .map((p) => ({ p, s: score(p, lineNorm, lineTokens) }))
       .filter((x) => x.s > 0)
       .sort((a, b) => b.s - a.s)
 
     if (scored.length === 0) {
-      out.push({ ...parsed, status: 'notfound', best: null, candidates: [] })
+      out.push({ draft, status: 'notfound', best: null, candidates: [] })
       continue
     }
     const top = scored[0].s
     const tied = scored.filter((x) => x.s === top)
     out.push({
-      ...parsed,
+      draft,
       status: tied.length > 1 ? 'ambiguous' : 'ok',
       best: scored[0].p,
       candidates: scored.slice(0, 6).map((x) => x.p),
     })
   }
   return out
+}
+
+export function matchLines(text: string, players: Player[]): MatchResult[] {
+  const drafts = text
+    .split(/\r?\n/)
+    .map(parseLine)
+    .filter((d): d is TargetDraft => d !== null)
+  return matchDrafts(drafts, players)
 }

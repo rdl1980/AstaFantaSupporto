@@ -9,7 +9,7 @@ Fatto = presente nell'app; le altre voci non sono ancora implementate.
 - Listone con ricerca, filtri per ruolo e squadra, ordinamenti
 - Registrazione acquisti di tutte le squadre, budget e offerta massima
 - Rosa per ruolo con multiruolo Mantra in tutte le caselle
-- Obiettivi con prezzo massimo e note; import da lista incollata
+- Obiettivi con priorità, prezzo massimo e note; import da lista o JSON, export JSON
 - Piano di spesa per reparto con avvisi di sforamento
 - Scarsità per ruolo a fasce e indicatori di mercato
 - Miglior formazione per ogni modulo Mantra, con tabella dei moduli modificabile

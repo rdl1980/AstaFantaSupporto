@@ -3,7 +3,7 @@ import { repartoPlans } from '../analysis'
 import { playerFvm, useStore } from '../store'
 import { ImportTargets } from './ImportTargets'
 import type { ClassicRole, Player, Target } from '../types'
-import { CLASSIC_ROLE_ORDER } from '../types'
+import { CLASSIC_ROLE_ORDER, PRIORITY_LABEL, PRIORITY_ORDER, PRIORITY_SHORT } from '../types'
 
 function normalize(s: string): string {
   return s
@@ -45,6 +45,9 @@ export function PrepPanel({ onPick }: { onPick: (p: Player) => void }) {
         const soldA = purchaseByPlayer.has(a.pl.id) ? 1 : 0
         const soldB = purchaseByPlayer.has(b.pl.id) ? 1 : 0
         if (soldA !== soldB) return soldA - soldB
+        const prioA = a.t.priority ?? 9
+        const prioB = b.t.priority ?? 9
+        if (prioA !== prioB) return prioA - prioB
         return playerFvm(b.pl, config.mode) - playerFvm(a.pl, config.mode)
       })
     }
@@ -202,6 +205,25 @@ export function PrepPanel({ onPick }: { onPick: (p: Player) => void }) {
                       <span className="t-star" onClick={() => dispatch({ type: 'toggleTarget', playerId: pl.id })}>
                         ★
                       </span>
+                      <select
+                        className={`t-prio prio-${t.priority ?? 0}`}
+                        value={t.priority ?? 0}
+                        title={t.priority ? PRIORITY_LABEL[t.priority] : 'Senza priorità'}
+                        onChange={(e) =>
+                          dispatch({
+                            type: 'setTarget',
+                            playerId: pl.id,
+                            patch: { priority: Number(e.target.value) || null },
+                          })
+                        }
+                      >
+                        <option value={0}>—</option>
+                        {PRIORITY_ORDER.map((p) => (
+                          <option key={p} value={p}>
+                            {PRIORITY_SHORT[p]}
+                          </option>
+                        ))}
+                      </select>
                       <span className="t-name" onClick={() => onPick(pl)}>
                         {pl.name}{' '}
                         <span className="muted small">

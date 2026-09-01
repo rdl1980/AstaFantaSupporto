@@ -35,7 +35,20 @@ export interface Target {
   playerId: number
   maxPrice: number | null
   note: string
+  /** 1 = Prio1, 2 = Prio2, 3 = Low, 4 = Scommessa; null = senza priorità */
+  priority: number | null
 }
+
+export const PRIORITY_ORDER = [1, 2, 3, 4]
+
+export const PRIORITY_LABEL: Record<number, string> = {
+  1: 'Prio1',
+  2: 'Prio2',
+  3: 'Low',
+  4: 'Scommessa',
+}
+
+export const PRIORITY_SHORT: Record<number, string> = { 1: 'P1', 2: 'P2', 3: 'Low', 4: 'S' }
 
 export type Mode = 'mantra' | 'classic'
 

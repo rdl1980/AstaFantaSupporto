@@ -53,6 +53,8 @@ export interface LeagueConfig {
   budgetSplit: Record<ClassicRole, number>
   /** Quanti giocatori conto di prendere per reparto in Mantra (solo pianificazione; P non usato) */
   mantraPlanSlots: Record<ClassicRole, number>
+  /** Tabella dei moduli Mantra, nel formato "Nome: slot, slot, ..." (una riga per modulo) */
+  modulesText: string
 }
 
 export interface AppState {

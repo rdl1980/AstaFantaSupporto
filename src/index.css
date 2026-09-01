@@ -617,6 +617,78 @@ td.status { font-size: 12px; white-space: nowrap; }
 .t-status { min-width: 62px; text-align: right; }
 .t-note { flex-basis: 100%; padding: 2px 6px; font-size: 12px; }
 
+/* ---------- moduli ---------- */
+.modules-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.modules-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+  gap: 8px;
+}
+
+.module-card {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--warn);
+  border-radius: 8px;
+  padding: 8px 10px;
+}
+
+.module-card.complete { border-left-color: var(--green); }
+
+.module-head {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.module-fvm { margin-left: auto; white-space: nowrap; }
+.module-missing { margin: 2px 0 4px; }
+
+.module-slots {
+  list-style: none;
+  margin: 4px 0 0;
+  padding: 0;
+}
+
+.module-slots li {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 1px 0;
+}
+
+.module-slots li .badge { width: 46px; flex: none; text-align: center; }
+.module-slots li.empty-slot { opacity: 0.5; }
+
+.module-player {
+  cursor: pointer;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.module-player:hover { color: var(--accent); }
+
+.module-errors { margin: 6px 0; padding-left: 18px; }
+
+.bench {
+  margin-top: 10px;
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 8px 10px;
+}
+
+.bench h4 { margin: 0 0 4px; }
+.bench-list { line-height: 1.6; }
+
 /* ---------- dialog: scarsità ---------- */
 .dialog-ranks {
   display: flex;

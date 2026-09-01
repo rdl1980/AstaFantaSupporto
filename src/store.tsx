@@ -1,6 +1,7 @@
 /* eslint-disable react-refresh/only-export-components */
 import { createContext, useContext, useEffect, useMemo, useReducer } from 'react'
 import type { ReactNode } from 'react'
+import { DEFAULT_MODULES_TEXT } from './modules'
 import type { AppState, ClassicRole, LeagueConfig, Mode, Player, Purchase, Target } from './types'
 import { CLASSIC_ROLE_ORDER } from './types'
 
@@ -20,6 +21,7 @@ export function defaultConfig(): LeagueConfig {
     mantraOutfield: 29,
     budgetSplit: { P: 8, D: 20, C: 30, A: 42 },
     mantraPlanSlots: { P: 6, D: 10, C: 12, A: 7 },
+    modulesText: DEFAULT_MODULES_TEXT,
   }
 }
 

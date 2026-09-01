@@ -50,6 +50,20 @@ opzionale dopo `=`, `:` o `|`) preso da qualsiasi altra fonte: i nomi vengono ri
 listone anche se scritti in forma diversa — "Lautaro Martinez" trova `Martinez L.`, "Josep Martinez"
 trova `Martinez Jo.` — e le righe ambigue o non riconosciute restano lì per la conferma manuale.
 
+## Moduli (solo Mantra)
+
+Per ogni modulo della tabella Mantra mostra la **migliore formazione schierabile** con i giocatori
+che hai in rosa, ordinando i moduli per slot coperti e poi per FVM totale. Gli slot scoperti sono
+elencati in cima alla scheda ("manca: Dc, E, A/Pc"), così sai cosa ti serve mentre l'asta è in corso.
+
+L'assegnazione non è golosa: dato che un multiruolo può occupare slot diversi, la scelta migliore per
+uno slot dipende da tutte le altre, quindi si risolve come abbinamento ottimo su grafo bipartito
+(flusso di costo minimo in [src/lineup.ts](src/lineup.ts)).
+
+La tabella dei moduli è modificabile dall'app con **✎ Modifica tabella**: un modulo per riga, nel
+formato `Nome: slot, slot, …` con 11 slot, dove uno slot che accetta più ruoli si scrive `Dc/B`.
+Serve se la tua lega usa una tabella diversa da quella predefinita.
+
 ## Scarsità
 
 - **Mercato**: crediti e slot ancora in gioco, media per slot della lega, e quanto vale uno slot per te

@@ -2,13 +2,14 @@ import { useEffect, useState } from 'react'
 import { teamStats, useStore } from '../store'
 import type { AppState, Player } from '../types'
 import { Listone } from './Listone'
+import { ModulesPanel } from './ModulesPanel'
 import { MyRoster } from './MyRoster'
 import { PrepPanel } from './PrepPanel'
 import { PurchaseDialog } from './PurchaseDialog'
 import { ScarcityPanel } from './ScarcityPanel'
 import { TeamsPanel } from './TeamsPanel'
 
-type Tab = 'rosa' | 'squadre' | 'obiettivi' | 'scarsita'
+type Tab = 'rosa' | 'squadre' | 'obiettivi' | 'scarsita' | 'moduli'
 
 export function AuctionScreen({ onSetup }: { onSetup: () => void }) {
   const { state, dispatch, myTeamId } = useStore()
@@ -121,12 +122,18 @@ export function AuctionScreen({ onSetup }: { onSetup: () => void }) {
             <button className={tab === 'scarsita' ? 'active' : ''} onClick={() => setTab('scarsita')}>
               Scarsità
             </button>
+            {state.config.mode === 'mantra' && (
+              <button className={tab === 'moduli' ? 'active' : ''} onClick={() => setTab('moduli')}>
+                Moduli
+              </button>
+            )}
           </div>
           <div className="tab-content">
             {tab === 'rosa' && <MyRoster onPick={setDialogPlayer} />}
             {tab === 'squadre' && <TeamsPanel onPick={setDialogPlayer} />}
             {tab === 'obiettivi' && <PrepPanel onPick={setDialogPlayer} />}
             {tab === 'scarsita' && <ScarcityPanel onPick={setDialogPlayer} />}
+            {tab === 'moduli' && state.config.mode === 'mantra' && <ModulesPanel onPick={setDialogPlayer} />}
           </div>
         </div>
       </div>

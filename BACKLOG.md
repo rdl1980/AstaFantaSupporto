@@ -12,6 +12,7 @@ Fatto = presente nell'app; le altre voci non sono ancora implementate.
 - Obiettivi con prezzo massimo e note; import da lista incollata
 - Piano di spesa per reparto con avvisi di sforamento
 - Scarsità per ruolo a fasce e indicatori di mercato
+- Miglior formazione per ogni modulo Mantra, con tabella dei moduli modificabile
 - Backup/ripristino JSON, annulla ultimo acquisto
 - Pubblicazione automatica su GitHub Pages
 
@@ -61,9 +62,10 @@ o sotto il suggerito), della scarsità del ruolo e del budget residuo degli avve
 Legare più giocatori in un gruppo ("uno di questi tre"), così quando ne prendi uno
 gli altri escono automaticamente dagli obiettivi e il budget si libera.
 
-### Vincoli di rosa Mantra
-Controllo della fattibilità dei moduli: dato ciò che hai in rosa, quali moduli Mantra
-puoi schierare e quali ruoli ti mancano per completarne almeno uno.
+### Moduli: cosa comprare per migliorare
+Estensione della sezione Moduli: dato un modulo, indicare quali ruoli ancora disponibili
+in asta farebbero crescere di più la formazione, e di quanto. In pratica il collegamento
+diretto tra "mi manca un Dc" e la lista dei Dc ancora sul mercato.
 
 ### Import obiettivi da immagine
 Caricare direttamente lo screenshot di una lista e riconoscerne i nomi, invece di

@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { teamStats, useStore } from '../store'
 import type { AppState, Player } from '../types'
 import { AuctionPicker } from './AuctionsManager'
+import { CallBar } from './CallBar'
 import { Listone } from './Listone'
 import { ModulesPanel } from './ModulesPanel'
 import { MyRoster } from './MyRoster'
@@ -22,6 +23,13 @@ export function AuctionScreen({
   const { state, dispatch, myTeamId, saveError } = useStore()
   const [tab, setTab] = useState<Tab>('rosa')
   const [dialogPlayer, setDialogPlayer] = useState<Player | null>(null)
+  const [callPlayer, setCallPlayer] = useState<Player | null>(null)
+
+  // In modalità chiamata il click sul listone mette il giocatore in trattativa
+  // nella barra; altrove (rosa, squadre, obiettivi) apre sempre il dialog,
+  // perché lì si va per correggere un acquisto, non per farne uno.
+  const pickFromListone = (p: Player) =>
+    state.config.callMode ? setCallPlayer(p) : setDialogPlayer(p)
 
   const myStats = teamStats(state, myTeamId)
 
@@ -107,6 +115,16 @@ export function AuctionScreen({
             />
           </label>
           <button
+            className={`btn ${state.config.callMode ? 'primary' : 'ghost'}`}
+            onClick={() => {
+              dispatch({ type: 'setConfig', patch: { callMode: !state.config.callMode } })
+              setCallPlayer(null)
+            }}
+            title="Modalità chiamata: il click sul listone apre la barra di trattativa invece del dialog"
+          >
+            🔨 Chiamata
+          </button>
+          <button
             className="btn ghost"
             onClick={onReport}
             title="Report, export e cronologia dell'asta"
@@ -126,9 +144,11 @@ export function AuctionScreen({
         </div>
       )}
 
+      {callPlayer && <CallBar player={callPlayer} onClose={() => setCallPlayer(null)} />}
+
       <div className="columns">
         <div className="col-listone">
-          <Listone onPick={setDialogPlayer} />
+          <Listone onPick={pickFromListone} />
         </div>
         <div className="col-side">
           <div className="tabs">

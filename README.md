@@ -28,6 +28,7 @@ Poi apri http://localhost:5173.
    - **Obiettivi**: piano di spesa per reparto + lista dei target (vedi sotto).
    - **Scarsità**: quanto vale ancora il mercato e cosa resta per ruolo (vedi sotto).
    - **Annulla ultimo**, **Backup/Ripristina** (JSON) dalla barra in alto.
+   - **🔨 Chiamata**: modalità di trattativa assistita (vedi sotto).
 3. **Report** — analisi di fine asta, export ed elenco cronologico (vedi sotto).
 
 ## Aste multiple
@@ -107,6 +108,30 @@ uno slot dipende da tutte le altre, quindi si risolve come abbinamento ottimo su
 La tabella dei moduli è modificabile dall'app con **✎ Modifica tabella**: un modulo per riga, nel
 formato `Nome: slot, slot, …` con 11 slot, dove uno slot che accetta più ruoli si scrive `Dc/B`.
 Serve se la tua lega usa una tabella diversa da quella predefinita.
+
+## Modalità chiamata
+
+Il pulsante **🔨 Chiamata** cambia cosa succede quando clicchi un giocatore nel listone: invece del
+dialog compare una barra sotto l'intestazione, che resta lì per tutta la trattativa e lascia il
+listone visibile. La barra mostra il giocatore in asta con quotazione, prezzo suggerito, il tuo
+prezzo massimo se è un obiettivo, la sua posizione nel ruolo, e soprattutto **fino a quanto puoi
+arrivare** tu e **quali avversari possono ancora superarti**: man mano che alzi il prezzo, chi non
+può più permetterselo viene barrato.
+
+Per registrare basta scrivere il prezzo e cliccare la squadra: nessun dialog da confermare. `Invio`
+assegna alla squadra già selezionata, `Esc` chiude la chiamata. Riaprendo un giocatore già assegnato
+la barra si precompila e offre lo svincolo.
+
+L'interruttore è salvato nell'asta, quindi resta come lo lasci. Con la modalità spenta tutto funziona
+come prima. Il click dalla rosa, dalle squadre o dagli obiettivi apre sempre il dialog, perché lì si
+va per correggere un acquisto, non per farne uno.
+
+## Avvisi sul budget
+
+Sia il dialog sia la barra di chiamata segnalano quando il prezzo supera i crediti della squadra
+scelta, o quando lascia scoperti gli slot ancora da riempire (l'offerta massima tiene un credito da
+parte per ognuno). Sono avvisi, non blocchi: servono a intercettare l'errore di battitura — 650 al
+posto di 65 — senza impedirti di registrare quello che è successo davvero.
 
 ## Report ed export
 

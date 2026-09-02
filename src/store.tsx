@@ -34,6 +34,7 @@ export function defaultConfig(): LeagueConfig {
     budgetSplit: { P: 8, D: 20, C: 30, A: 42 },
     mantraPlanSlots: { P: 6, D: 10, C: 12, A: 7 },
     modulesText: DEFAULT_MODULES_TEXT,
+    callMode: false,
   }
 }
 
@@ -376,6 +377,26 @@ export function teamStats(state: AppState, teamId: string): TeamStats {
     slotsLeft,
     maxBid: Math.max(0, remaining - Math.max(0, slotsLeft - 1)),
   }
+}
+
+/**
+ * Quanto puo' offrire una squadra per il giocatore in trattativa, lasciando un
+ * credito per ogni altro slot ancora da riempire.
+ *
+ * `refund` e' il prezzo di un acquisto della stessa squadra che si sta
+ * correggendo: quei crediti tornano disponibili e lo slot che occupa va
+ * ricontato fra quelli da riempire.
+ */
+export function maxBidFor(state: AppState, teamId: string, refund = 0): number {
+  const s = teamStats(state, teamId)
+  const available = s.remaining + refund
+  const slotsToFill = refund > 0 ? s.slotsLeft + 1 : s.slotsLeft
+  return Math.max(0, available - Math.max(0, slotsToFill - 1))
+}
+
+/** Crediti effettivamente spendibili, senza tenere conto degli slot da coprire. */
+export function availableFor(state: AppState, teamId: string, refund = 0): number {
+  return teamStats(state, teamId).remaining + refund
 }
 
 // ---- Context ----

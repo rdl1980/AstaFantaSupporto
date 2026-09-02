@@ -996,3 +996,81 @@ td.status { font-size: 12px; white-space: nowrap; }
 .club-chip.crowded {
   border-color: var(--warn);
 }
+
+/* ---------- barra della chiamata ---------- */
+.callbar {
+  background: var(--bg3);
+  border-bottom: 2px solid var(--accent);
+  padding: 7px 14px;
+}
+
+.callbar-main {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
+.callbar-player {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  white-space: nowrap;
+}
+
+.callbar-name {
+  font-size: 17px;
+  font-weight: 700;
+}
+
+.callbar-facts {
+  display: flex;
+  gap: 14px;
+  align-items: baseline;
+  flex-wrap: wrap;
+}
+
+.callbar-facts .big-num { font-size: 17px; }
+
+.callbar-price {
+  width: 96px;
+  font-size: 19px;
+  text-align: right;
+  border-color: var(--accent);
+}
+
+.callbar-teams {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+  flex: 1;
+}
+
+.callbar-teams .team-btn {
+  padding: 4px 8px;
+  font-size: 12px;
+}
+
+.callbar-actions {
+  display: flex;
+  gap: 4px;
+  margin-left: auto;
+}
+
+.callbar-rivals {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  align-items: baseline;
+  margin-top: 5px;
+}
+
+.rival {
+  color: var(--text);
+  white-space: nowrap;
+}
+
+.rival.out {
+  color: var(--muted);
+  text-decoration: line-through;
+}

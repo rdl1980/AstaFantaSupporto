@@ -68,6 +68,8 @@ export interface LeagueConfig {
   mantraPlanSlots: Record<ClassicRole, number>
   /** Tabella dei moduli Mantra, nel formato "Nome: slot, slot, ..." (una riga per modulo) */
   modulesText: string
+  /** Modalita' chiamata: il click sul listone mette il giocatore in trattativa invece di aprire il dialog */
+  callMode: boolean
 }
 
 export interface AppState {

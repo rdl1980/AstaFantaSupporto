@@ -19,28 +19,15 @@ Fatto = presente nell'app; le altre voci non sono ancora implementate.
 - Report di fine asta: spesa per reparto, affari e sovrapprezzi, confronto squadre, copertura club
 - Cronologia dell'asta filtrabile per squadra
 - Export Excel della rosa e del tabellone completo, rosa in testo per la chat
+- Modalità chiamata: barra di trattativa con offerta massima propria e degli avversari
+- Avvisi di sforamento del budget nel dialog e nella barra di chiamata
 
 ## Priorità alta
-
-### Avviso di sforamento del budget
-Oggi si può registrare un acquisto che porta il residuo sotto zero (utile se ci si
-sbaglia a digitare: 650 al posto di 65). Un avviso nel dialog di acquisto, senza
-bloccare, intercetterebbe l'errore di battitura sul momento.
 
 ### Immagine della rosa
 Export della rosa come immagine da condividere, oltre al testo e all'Excel già presenti.
 
 ## Priorità media
-
-### Modalità di chiamata assistita
-Un campo "in asta ora" con il giocatore corrente sempre visibile in alto, il tuo
-prezzo massimo, quanti avversari possono ancora superarti e un pulsante per
-registrare l'assegnazione senza aprire il dialog.
-
-### Allerta budget avversari
-Evidenziare quando un avversario non può più superare una certa cifra (perché deve
-riempire N slot), così sai quando puoi alzare senza rischio. Il dato c'è già
-(offerta massima per squadra), manca il confronto in tempo reale con l'asta corrente.
 
 ### Suggerimento prezzo migliorato
 Oggi il prezzo suggerito distribuisce i crediti sull'FVM. Possibili affinamenti:

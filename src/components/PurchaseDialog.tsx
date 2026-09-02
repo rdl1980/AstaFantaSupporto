@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { rankAmongRole } from '../analysis'
-import { playerQt, teamStats, useStore } from '../store'
+import { availableFor, maxBidFor, playerQt, teamStats, useStore } from '../store'
 import type { Player } from '../types'
 
 export function PurchaseDialog({ player, onClose }: { player: Player; onClose: () => void }) {
@@ -20,6 +20,25 @@ export function PurchaseDialog({ player, onClose }: { player: Player; onClose: (
   const myStats = teamStats(state, myTeamId)
   const priceNum = Number(price)
   const canConfirm = teamId !== null && Number.isFinite(priceNum) && priceNum >= 1
+
+  // Se sto correggendo un acquisto della stessa squadra, il vecchio prezzo torna
+  // disponibile e non va contato come sforamento
+  const refund = existing && existing.teamId === teamId ? existing.price : 0
+  const budgetWarning = (() => {
+    if (teamId === null || !Number.isFinite(priceNum) || priceNum < 1) return null
+    const available = availableFor(state, teamId, refund)
+    const maxBid = maxBidFor(state, teamId, refund)
+    if (priceNum > available) {
+      return { severe: true, text: `Supera i crediti disponibili di questa squadra (${available})` }
+    }
+    if (priceNum > maxBid) {
+      return {
+        severe: false,
+        text: `Oltre l'offerta massima (${maxBid}): non resterebbe un credito per ogni slot da riempire`,
+      }
+    }
+    return null
+  })()
 
   function confirm() {
     if (!canConfirm || teamId === null) return
@@ -112,6 +131,9 @@ export function PurchaseDialog({ player, onClose }: { player: Player; onClose: (
         </label>
         {target?.maxPrice != null && Number.isFinite(priceNum) && priceNum > target.maxPrice && (
           <p className="warn">⚠ Sopra il tuo prezzo massimo ({target.maxPrice})</p>
+        )}
+        {budgetWarning && (
+          <p className={budgetWarning.severe ? 'error' : 'warn'}>⚠ {budgetWarning.text}</p>
         )}
 
         <div className="team-pick">

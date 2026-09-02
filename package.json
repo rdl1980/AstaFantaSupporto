@@ -9,7 +9,8 @@
     "lint": "oxlint",
     "preview": "vite preview",
     "test": "node supabase/test-funzioni.mjs && node --experimental-strip-types test/countdown.mjs",
-    "test:sql": "node supabase/test-funzioni.mjs"
+    "test:sql": "node supabase/test-funzioni.mjs",
+    "test:live": "node --env-file=.env supabase/test-live.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.114.0",

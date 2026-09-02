@@ -19,10 +19,13 @@ export interface StatoSquadra {
 }
 
 export function slotTotali(s: SessioneRow): number {
+  // Una configurazione incompleta non deve lasciare un telefono con la
+  // schermata bianca in mezzo all'asta: meglio mostrare zero slot.
+  const cfg = s.slot_config ?? {}
   if (s.modalita === 'mantra') {
-    return (s.slot_config.portieri ?? 0) + (s.slot_config.movimento ?? 0)
+    return (cfg.portieri ?? 0) + (cfg.movimento ?? 0)
   }
-  const slot = s.slot_config.slot ?? {}
+  const slot = cfg.slot ?? {}
   return (slot.P ?? 0) + (slot.D ?? 0) + (slot.C ?? 0) + (slot.A ?? 0)
 }
 
@@ -57,12 +60,13 @@ export function slotRuoloPieno(
   ruolo: string,
 ): boolean {
   const mie = assegnazioni.filter((a) => a.squadra_id === squadraId)
+  const cfg = s.slot_config ?? {}
   if (s.modalita === 'mantra') {
     if (ruolo === 'P') {
-      return mie.filter((a) => a.ruolo_classic === 'P').length >= (s.slot_config.portieri ?? 0)
+      return mie.filter((a) => a.ruolo_classic === 'P').length >= (cfg.portieri ?? 0)
     }
-    return mie.filter((a) => a.ruolo_classic !== 'P').length >= (s.slot_config.movimento ?? 0)
+    return mie.filter((a) => a.ruolo_classic !== 'P').length >= (cfg.movimento ?? 0)
   }
-  const limite = s.slot_config.slot?.[ruolo] ?? 0
+  const limite = cfg.slot?.[ruolo] ?? 0
   return mie.filter((a) => a.ruolo_classic === ruolo).length >= limite
 }

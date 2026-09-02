@@ -264,9 +264,28 @@ export function useLive(sessioneId: string | null): StatoLive {
         if (attivo) leggiTutto(sessioneId).catch(() => {})
       })
 
+    // Rete di sicurezza. Misurando la latenza sul progetto vero si e' visto che
+    // nei primi istanti dopo SUBSCRIBED la replica non consegna ancora: un
+    // cambiamento che cade in quella finestra sfugge sia alla rilettura fatta
+    // alla sottoscrizione sia alla sottoscrizione stessa. Una rilettura
+    // periodica leggera chiude il buco senza che nessuno resti su una schermata
+    // vecchia.
+    const periodico = setInterval(() => {
+      leggiTutto(sessioneId).catch(() => {})
+    }, 10000)
+
+    // Sul telefono il socket muore quando si blocca lo schermo: al ritorno
+    // conviene rileggere subito invece di aspettare il giro periodico.
+    const alRitorno = () => {
+      if (document.visibilityState === 'visible') leggiTutto(sessioneId).catch(() => {})
+    }
+    document.addEventListener('visibilitychange', alRitorno)
+
     const db = supabase
     return () => {
       vivo.current = false
+      clearInterval(periodico)
+      document.removeEventListener('visibilitychange', alRitorno)
       void db.removeChannel(canale)
     }
   }, [sessioneId, leggiTutto, nonce])

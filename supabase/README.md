@@ -67,6 +67,25 @@ Esegue lo schema reale, prova le regole del rilancio (crediti, slot di ruolo,
 rilancio minimo, scadenza, autorizzazioni) e verifica che i token non siano
 leggibili dalle tabelle che il client interroga.
 
+## Collaudo contro il progetto vero
+
+Con il `.env` configurato:
+
+```bash
+npm run test:live
+```
+
+Crea una sessione chiamata "PROVA AUTOMATICA" e verifica sul database reale: creazione,
+rivendica delle squadre, chiamata, rilanci validi e rifiutati, **offerte simultanee**
+(tre offerte identiche partite insieme: ne deve passare una sola), aggiudicazione,
+consegna degli eventi realtime e il fatto che i token non siano leggibili con la chiave
+anon. Lascia dietro di sé qualche sessione di prova, innocua.
+
+Misure raccolte sul progetto reale: rilancio accettato in circa **95 ms**, propagazione
+agli altri dispositivi con mediana **circa 300 ms**. Più dei 200 ms teorici, ma in
+un'asta il conteggio va a secondi: chi rilancia riceve comunque la conferma in un
+decimo di secondo.
+
 ## Attenzione ai progetti gratuiti in pausa
 
 Un progetto Supabase gratuito viene messo in pausa dopo un periodo di inattività

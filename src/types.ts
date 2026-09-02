@@ -90,3 +90,25 @@ export const CLASSIC_ROLE_LABEL: Record<ClassicRole, string> = {
   C: 'Centrocampisti',
   A: 'Attaccanti',
 }
+
+/** Un'asta salvata: le regole della lega, il listone e tutto ciò che vi è successo. */
+export interface Auction {
+  id: string
+  name: string
+  createdAt: number
+  updatedAt: number
+  state: AppState
+}
+
+/** Radice della persistenza: tutte le aste salvate più quella attiva. */
+export interface Vault {
+  version: number
+  activeId: string
+  auctions: Auction[]
+}
+
+export const MODE_LABEL: Record<Mode, string> = { mantra: 'Mantra', classic: 'Classic' }
+
+export function otherMode(mode: Mode): Mode {
+  return mode === 'mantra' ? 'classic' : 'mantra'
+}

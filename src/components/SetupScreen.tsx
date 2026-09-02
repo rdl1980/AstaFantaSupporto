@@ -1,4 +1,5 @@
 import { useRef, useState } from 'react'
+import { AuctionsCard } from './AuctionsManager'
 import { parseListone } from '../parseListone'
 import { useStore } from '../store'
 import type { ClassicRole, Mode } from '../types'
@@ -31,8 +32,10 @@ export function SetupScreen({ onDone }: { onDone: () => void }) {
     <div className="setup">
       <h1>⚽ Asta Fanta Supporto</h1>
 
+      <AuctionsCard />
+
       <section className="card">
-        <h2>1 · Listone quotazioni</h2>
+        <h2>Listone quotazioni</h2>
         <p className="muted">
           Importa il file Excel delle quotazioni scaricato da fantacalcio.it. Puoi reimportare il file
           definitivo poco prima dell&apos;asta: acquisti e obiettivi vengono mantenuti.
@@ -63,7 +66,7 @@ export function SetupScreen({ onDone }: { onDone: () => void }) {
       </section>
 
       <section className="card">
-        <h2>2 · Regole della lega</h2>
+        <h2>Regole della lega</h2>
         <div className="form-row">
           <label>
             Modalità
@@ -142,7 +145,7 @@ export function SetupScreen({ onDone }: { onDone: () => void }) {
       </section>
 
       <section className="card">
-        <h2>3 · Squadre</h2>
+        <h2>Squadre</h2>
         <p className="muted">La prima è la tua. Puoi rinominarle anche durante l&apos;asta.</p>
         <div className="teams-grid">
           {config.teams.map((t) => (

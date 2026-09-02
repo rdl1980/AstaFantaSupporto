@@ -29,13 +29,30 @@ Poi apri http://localhost:5173.
    - **Scarsità**: quanto vale ancora il mercato e cosa resta per ruolo (vedi sotto).
    - **Annulla ultimo**, **Backup/Ripristina** (JSON) dalla barra in alto.
 
+## Aste multiple
+
+L'app tiene più aste salvate insieme: ognuna ha le sue regole, il suo listone, i suoi obiettivi e i
+suoi acquisti. Si passa dall'una all'altra dal selettore in alto a sinistra, e si gestiscono tutte
+dalla card **Aste salvate** nel setup (rinomina, duplica, elimina).
+
+Il pulsante **＋** apre la creazione di una nuova asta: il nome è libero e la modalità è già
+impostata su quella opposta a quella corrente, che è il caso tipico (finito il Mantra, si prepara il
+Classic). Si sceglie cosa riportare dall'asta corrente — squadre e budget, listone importato,
+obiettivi — mentre gli acquisti non vengono mai riportati: la nuova asta parte da zero.
+
 ## Dove finiscono i dati
 
-Tutto è salvato nel `localStorage` del browser, sotto la chiave `asta-fanta-state-v1`:
-configurazione della lega, listone importato, acquisti e obiettivi. Nessun server, nessun
-account. Il `localStorage` è separato per indirizzo: i dati su `localhost:5173` e quelli
-sulla versione pubblicata su GitHub Pages sono due archivi distinti. Per spostarli usa
-**⬇ Backup** e **⬆ Ripristina** dalla barra in alto.
+Tutto è salvato nel `localStorage` del browser, sotto la chiave `asta-fanta-vault-v2`: tutte le aste
+salvate più il riferimento a quella attiva. Nessun server, nessun account. Chi arriva dalla versione a
+singola asta viene migrato automaticamente al primo avvio, e la vecchia chiave `asta-fanta-state-v1`
+resta intatta come rete di sicurezza.
+
+Il `localStorage` è separato per indirizzo: i dati su `localhost:5173` e quelli sulla versione
+pubblicata su GitHub Pages sono due archivi distinti. Per spostarli usa
+**⬇ Backup** e **⬆ Ripristina** dalla barra in alto: il backup riguarda **l'asta attiva**, e il
+ripristino la sovrascrive, quindi si possono usare anche per travasare una singola asta da un
+dispositivo all'altro. Se il browser esaurisce lo spazio compare un avviso in cima: da lì conviene
+fare subito un backup ed eliminare un'asta vecchia.
 
 ## Piano di spesa e obiettivi
 

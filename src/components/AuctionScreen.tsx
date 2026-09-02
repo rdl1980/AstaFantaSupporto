@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { teamStats, useStore } from '../store'
 import type { AppState, Player } from '../types'
+import { AuctionPicker } from './AuctionsManager'
 import { Listone } from './Listone'
 import { ModulesPanel } from './ModulesPanel'
 import { MyRoster } from './MyRoster'
@@ -12,7 +13,7 @@ import { TeamsPanel } from './TeamsPanel'
 type Tab = 'rosa' | 'squadre' | 'obiettivi' | 'scarsita' | 'moduli'
 
 export function AuctionScreen({ onSetup }: { onSetup: () => void }) {
-  const { state, dispatch, myTeamId } = useStore()
+  const { state, dispatch, myTeamId, saveError } = useStore()
   const [tab, setTab] = useState<Tab>('rosa')
   const [dialogPlayer, setDialogPlayer] = useState<Player | null>(null)
 
@@ -56,6 +57,7 @@ export function AuctionScreen({ onSetup }: { onSetup: () => void }) {
     <div className="auction">
       <header className="topbar">
         <div className="topbar-left">
+          <AuctionPicker />
           <span className={`badge mode-badge ${state.config.mode}`}>
             {state.config.mode === 'mantra' ? 'MANTRA' : 'CLASSIC'}
           </span>
@@ -103,6 +105,13 @@ export function AuctionScreen({ onSetup }: { onSetup: () => void }) {
           </button>
         </div>
       </header>
+
+      {saveError && (
+        <div className="save-error">
+          ⚠ Salvataggio nel browser non riuscito (memoria piena). I dati sono solo in memoria: fai subito
+          un <b>Backup</b> e libera spazio eliminando un&apos;asta vecchia.
+        </div>
+      )}
 
       <div className="columns">
         <div className="col-listone">

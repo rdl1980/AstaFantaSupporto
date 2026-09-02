@@ -15,14 +15,9 @@ Fatto = presente nell'app; le altre voci non sono ancora implementate.
 - Miglior formazione per ogni modulo Mantra, con tabella dei moduli modificabile
 - Backup/ripristino JSON, annulla ultimo acquisto
 - Pubblicazione automatica su GitHub Pages
+- Aste multiple con nome, modalità indipendente, cambio rapido, duplica ed elimina
 
 ## Priorità alta
-
-### Multi-lega
-Salvare più aste (Mantra, Classic, stagioni diverse) e passare dall'una all'altra
-senza perdere dati. Selettore in alto, duplicazione di una lega come modello,
-rinomina ed eliminazione. Richiede di passare da uno stato singolo a una raccolta
-di leghe con un id attivo, con migrazione dello stato esistente.
 
 ### Export delle rose
 - **Excel/CSV** della rosa: nome, squadra, ruoli, prezzo pagato, quotazione, FVM,

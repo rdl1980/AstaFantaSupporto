@@ -186,6 +186,21 @@ verifica('pubblica_assegnazione con token sbagliato rifiutata',
 verifica('giocatore gia assegnato non puo tornare in asta',
   (await rpc('metti_all_asta', { ...inAsta, p_giocatore_id: 100 })).motivo === 'gia_assegnato')
 
+// ------------------------------------------- chiusura di una chiamata scaduta --
+console.log(`
+== Aggiudicazione di una chiamata scaduta, senza il banditore ==`)
+await rpc('metti_all_asta', { ...inAsta, p_giocatore_id: 700, p_nome: 'Scaduto', p_ruolo: 'D' })
+await rpc('rilancia', { p_sessione: sid, p_squadra: B.id, p_claim_token: tokB, p_offerta: 7 })
+let sc = await rpc('aggiudica_se_scaduta', { p_sessione: sid })
+verifica('prima della scadenza non aggiudica', sc.ok === false && sc.motivo === 'non_ancora_scaduta', JSON.stringify(sc))
+await db.query("update chiamata set scadenza = now() - interval '1 second' where sessione_id=$1", [sid])
+sc = await rpc('aggiudica_se_scaduta', { p_sessione: sid })
+verifica('dopo la scadenza aggiudica senza token del banditore', sc.ok === true && sc.prezzo === 7, JSON.stringify(sc))
+const ripetuta = await rpc('aggiudica_se_scaduta', { p_sessione: sid })
+verifica('la seconda chiamata e innocua', ripetuta.ok === false && ripetuta.motivo === 'nessuna_chiamata')
+const reg = await db.query('select * from assegnazione where sessione_id=$1 and giocatore_id=700', [sid])
+verifica('acquisto registrato una sola volta', reg.rows.length === 1 && reg.rows[0].prezzo === 7)
+
 // ------------------------------------------------ i segreti restano segreti --
 console.log('\n== I token non sono leggibili dalle tabelle di gioco ==')
 const colonne = async (tab) =>

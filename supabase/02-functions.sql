@@ -343,3 +343,40 @@ begin
                             'prezzo', c.offerta_attuale, 'giocatore_id', c.giocatore_id);
 end
 $$;
+
+-- Chiude una chiamata gia' scaduta, aggiudicando al miglior offerente.
+--
+-- Non richiede il token del banditore, di proposito: l'aggiudicazione non deve
+-- dipendere dal fatto che il suo browser sia sveglio e in primo piano. Qualsiasi
+-- client che veda il conteggio finito puo' chiamarla; il server accetta solo se
+-- la scadenza e' davvero passata, e il lock rende innocue le chiamate ripetute.
+create or replace function aggiudica_se_scaduta(p_sessione uuid)
+returns jsonb language plpgsql security definer as $$
+declare c chiamata%rowtype;
+begin
+  select * into c from chiamata where sessione_id = p_sessione for update;
+  if not found or c.stato <> 'active' then
+    return jsonb_build_object('ok', false, 'motivo', 'nessuna_chiamata');
+  end if;
+  if c.scadenza is null or now() < c.scadenza then
+    return jsonb_build_object('ok', false, 'motivo', 'non_ancora_scaduta');
+  end if;
+
+  if c.miglior_offerente_id is not null then
+    insert into assegnazione (sessione_id, squadra_id, giocatore_id, giocatore_nome,
+                              club, ruolo_classic, ruoli_mantra, prezzo)
+      values (p_sessione, c.miglior_offerente_id, c.giocatore_id, c.giocatore_nome,
+              c.club, c.ruolo_classic, c.ruoli_mantra, c.offerta_attuale)
+      on conflict (sessione_id, giocatore_id) do nothing;
+  end if;
+
+  update chiamata set stato = 'idle', giocatore_id = null, giocatore_nome = null,
+                      club = null, ruolo_classic = null, ruoli_mantra = null,
+                      offerta_attuale = null, miglior_offerente_id = null,
+                      scadenza = null, versione = versione + 1
+    where sessione_id = p_sessione;
+
+  return jsonb_build_object('ok', true, 'squadra_id', c.miglior_offerente_id,
+                            'prezzo', c.offerta_attuale, 'giocatore_id', c.giocatore_id);
+end
+$$;

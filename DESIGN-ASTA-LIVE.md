@@ -1,8 +1,10 @@
 # Asta Live Sincronizzata — progettazione
 
-> **Stato: realizzata.** Entrambe le fasi sono implementate. Lo schema e le funzioni sono
-> in [`supabase/`](supabase/), la messa in piedi in [supabase/README.md](supabase/README.md).
-> Restano da fare la prova con dispositivi veri e le decisioni aperte del §14.
+> **Stato: realizzata e verificata sul progetto reale.** Entrambe le fasi sono implementate.
+> Lo schema e le funzioni sono in [`supabase/`](supabase/), la messa in piedi in
+> [supabase/README.md](supabase/README.md). Il collaudo end-to-end (`npm run test:live`) gira
+> contro il database vero, corsa fra offerte simultanee compresa. Resta la prova con più
+> telefoni di persone diverse.
 >
 > Due scelte sono cambiate rispetto alla prima stesura, ed è spiegato dove: i token non
 > stanno più nelle tabelle leggibili (§6) e il conteggio è derivato dalla scadenza (§7).
@@ -264,9 +266,13 @@ provocando disconnessioni e rilanci simultanei. Senza quella prova la Fase 2 non
 
 ## 14. Decisioni ancora aperte
 
-1. Il timer di fine chiamata lo decide il banditore a mano o scade da solo? (Automatico
-   significa che il server deve valutare la scadenza: si fa dentro `rilancia` e `assegna`,
-   senza processi schedulati.)
+1. ~~Il timer di fine chiamata lo decide il banditore a mano o scade da solo?~~ **Risolto:
+   scade da solo.** Il collaudo ha mostrato che affidare l'aggiudicazione al solo client del
+   banditore è fragile — se il suo browser dorme o la scheda va in secondo piano, l'asta resta
+   appesa su "AGGIUDICATO" senza che nessuno registri l'acquisto. Ora esiste
+   `aggiudica_se_scaduta()`, che non richiede il token del banditore: il primo dispositivo che
+   vede il conteggio finito chiude la chiamata, e il server accetta solo se la scadenza è
+   davvero passata. Il lock rende innocue le chiamate ripetute di più dispositivi insieme.
 2. Il rilancio minimo è sempre 1 credito o configurabile per lega?
 3. I partecipanti devono poter vedere gli obiettivi altrui? (Direi di no.)
 4. A fine asta ognuno si porta a casa la propria rosa nella sua app locale? Sarebbe il

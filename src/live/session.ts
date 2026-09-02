@@ -127,6 +127,17 @@ export async function assegna(sessioneId: string, adminToken: string) {
   return data
 }
 
+/**
+ * Chiude una chiamata scaduta. Non serve il token del banditore: chiunque veda
+ * il conteggio finito puo' chiamarla, cosi' l'aggiudicazione non dipende dal
+ * browser di una sola persona. Il server accetta solo se la scadenza e' passata.
+ */
+export async function aggiudicaSeScaduta(sessioneId: string) {
+  const { data, error } = await client().rpc('aggiudica_se_scaduta', { p_sessione: sessioneId })
+  if (error) throw new Error(error.message)
+  return data
+}
+
 export async function annullaChiamata(sessioneId: string, adminToken: string) {
   const { error } = await client().rpc('annulla_chiamata', {
     p_sessione: sessioneId,

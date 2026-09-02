@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { liveDisponibile, oraServer, sincronizzaOrologio } from './client'
 import { conteggio, etichetta } from './countdown'
 import { slotRuoloPieno, statoSquadra } from './derive'
-import { rilancia, rivendicaSquadra, trovaSessione, useLive } from './session'
+import { aggiudicaSeScaduta, rilancia, rivendicaSquadra, trovaSessione, useLive } from './session'
 import type { CredenzialiPartecipante, EsitoRilancio, SessioneRow } from './types'
 import { MOTIVO_LEGGIBILE } from './types'
 
@@ -170,6 +170,17 @@ function Terminale({
         intervalloSecondi: sessione.intervallo_secondi,
       })
     : null
+
+  // Quando il conteggio finisce, il primo dispositivo che se ne accorge chiude la
+  // chiamata. Serve perche' altrimenti l'aggiudicazione dipenderebbe dal browser
+  // del banditore: se dorme, l'asta resta appesa su "AGGIUDICATO".
+  useEffect(() => {
+    if (!attiva || c?.fase !== 'scaduta') return
+    const t = setTimeout(() => {
+      void aggiudicaSeScaduta(cred.sessioneId).catch(() => {})
+    }, 400)
+    return () => clearTimeout(t)
+  }, [attiva, c?.fase, cred.sessioneId])
 
   const prossima = (chiamata?.offerta_attuale ?? 0) + sessione.rilancio_minimo
   const ruoloPieno = chiamata?.ruolo_classic

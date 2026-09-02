@@ -20,6 +20,9 @@ Dal menu **SQL Editor**, esegui i tre file **in ordine**, uno alla volta:
 Se `03` si lamenta perché una tabella è già nella publication, va bene: significa
 che era già pubblicata.
 
+**Quando le funzioni cambiano** basta rieseguire `02-functions.sql`: usa
+`create or replace`, quindi rilanciarlo è sempre sicuro e non tocca i dati.
+
 ## 3. Copiare le credenziali
 
 In **Project Settings → API** trovi:

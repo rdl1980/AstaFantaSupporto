@@ -16,25 +16,19 @@ Fatto = presente nell'app; le altre voci non sono ancora implementate.
 - Backup/ripristino JSON, annulla ultimo acquisto
 - Pubblicazione automatica su GitHub Pages
 - Aste multiple con nome, modalità indipendente, cambio rapido, duplica ed elimina
+- Report di fine asta: spesa per reparto, affari e sovrapprezzi, confronto squadre, copertura club
+- Cronologia dell'asta filtrabile per squadra
+- Export Excel della rosa e del tabellone completo, rosa in testo per la chat
 
 ## Priorità alta
 
-### Export delle rose
-- **Excel/CSV** della rosa: nome, squadra, ruoli, prezzo pagato, quotazione, FVM,
-  totali per reparto. Un foglio per squadra o un unico foglio con la colonna squadra.
-- **Testo formattato** da incollare in chat (WhatsApp/Telegram): rosa compatta per reparto.
-- **Immagine** della rosa da condividere.
-- Export del **tabellone completo** dell'asta (tutti gli acquisti di tutte le squadre).
+### Avviso di sforamento del budget
+Oggi si può registrare un acquisto che porta il residuo sotto zero (utile se ci si
+sbaglia a digitare: 650 al posto di 65). Un avviso nel dialog di acquisto, senza
+bloccare, intercetterebbe l'errore di battitura sul momento.
 
-### Report di fine asta
-Riepilogo automatico: spesa per reparto contro il piano, prezzo medio pagato rispetto
-al suggerito, affari e pagati troppo (scostamento dal prezzo suggerito), copertura
-squadre di Serie A, confronto della tua rosa con quelle avversarie per FVM totale.
-
-### Cronologia dell'asta
-Registro cronologico di ogni chiamata con orario, prezzo e acquirente. Serve per
-ricostruire l'andamento, capire chi sta spendendo troppo presto e per l'annullamento
-selettivo. Prerequisito per gran parte del reporting sopra.
+### Immagine della rosa
+Export della rosa come immagine da condividere, oltre al testo e all'Excel già presenti.
 
 ## Priorità media
 

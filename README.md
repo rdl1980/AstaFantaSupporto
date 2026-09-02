@@ -28,6 +28,7 @@ Poi apri http://localhost:5173.
    - **Obiettivi**: piano di spesa per reparto + lista dei target (vedi sotto).
    - **Scarsità**: quanto vale ancora il mercato e cosa resta per ruolo (vedi sotto).
    - **Annulla ultimo**, **Backup/Ripristina** (JSON) dalla barra in alto.
+3. **Report** — analisi di fine asta, export ed elenco cronologico (vedi sotto).
 
 ## Aste multiple
 
@@ -106,6 +107,31 @@ uno slot dipende da tutte le altre, quindi si risolve come abbinamento ottimo su
 La tabella dei moduli è modificabile dall'app con **✎ Modifica tabella**: un modulo per riga, nel
 formato `Nome: slot, slot, …` con 11 slot, dove uno slot che accetta più ruoli si scrive `Dc/B`.
 Serve se la tua lega usa una tabella diversa da quella predefinita.
+
+## Report ed export
+
+Il pulsante **📊 Report** apre una schermata che legge l'asta e la racconta:
+
+- **La tua asta**: giocatori, speso, residuo, valore suggerito della rosa, FVM totale e posizione
+  per FVM tra le squadre della lega.
+- **Spesa per reparto**: quanto è finito in ogni reparto contro il piano, in crediti e in percentuale.
+- **Affari e pagati cari**: gli acquisti più lontani dal prezzo suggerito, nei due sensi.
+- **Confronto squadre**: FVM totale, spesa, residuo e FVM per credito di tutti i partecipanti.
+- **Copertura squadre di Serie A**: quanti club sono rappresentati; quelli con quattro o più tuoi
+  giocatori sono evidenziati, perché legano la tua giornata alla loro.
+- **La tua rosa** e **cronologia dell'asta**, quest'ultima filtrabile per squadra.
+
+Gli scostamenti sono calcolati sul prezzo suggerito dall'app: dicono se hai comprato sopra o sotto
+la media della lega, non se hai comprato bene.
+
+Tre export dalla stessa barra:
+
+- **⬇ Excel rosa** — la tua rosa in `.xlsx`, con prezzo, suggerito, scostamento, quotazione e FVM.
+- **⬇ Excel tabellone** — un foglio di riepilogo, uno con tutti gli acquisti della lega e uno per
+  squadra. I nomi dei fogli sono ripuliti dai caratteri che Excel rifiuta e resi unici.
+- **📋 Rosa per chat** — la rosa in testo compatto negli appunti, pronta da incollare.
+
+Sono file Excel veri, scritti con SheetJS, non CSV: si aprono senza domande sul separatore.
 
 ## Scarsità
 

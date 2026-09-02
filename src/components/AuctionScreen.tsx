@@ -12,7 +12,13 @@ import { TeamsPanel } from './TeamsPanel'
 
 type Tab = 'rosa' | 'squadre' | 'obiettivi' | 'scarsita' | 'moduli'
 
-export function AuctionScreen({ onSetup }: { onSetup: () => void }) {
+export function AuctionScreen({
+  onSetup,
+  onReport,
+}: {
+  onSetup: () => void
+  onReport: () => void
+}) {
   const { state, dispatch, myTeamId, saveError } = useStore()
   const [tab, setTab] = useState<Tab>('rosa')
   const [dialogPlayer, setDialogPlayer] = useState<Player | null>(null)
@@ -100,6 +106,13 @@ export function AuctionScreen({ onSetup }: { onSetup: () => void }) {
               }}
             />
           </label>
+          <button
+            className="btn ghost"
+            onClick={onReport}
+            title="Report, export e cronologia dell'asta"
+          >
+            📊 Report
+          </button>
           <button className="btn ghost" onClick={onSetup}>
             ⚙ Setup
           </button>

@@ -898,3 +898,101 @@ td.status { font-size: 12px; white-space: nowrap; }
   padding: 7px 14px;
   font-size: 13px;
 }
+
+/* ---------- report ---------- */
+.report {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  overflow: hidden;
+}
+
+.report-title {
+  margin: 0;
+  font-size: 17px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.report-body {
+  overflow-y: auto;
+  padding: 16px;
+  max-width: 1150px;
+  width: 100%;
+  margin: 0 auto;
+}
+
+.report-stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 26px;
+  margin: 10px 0;
+}
+
+.report-stats .stat {
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0;
+}
+
+.report-cols {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 14px;
+}
+
+.report-table {
+  margin-top: 8px;
+}
+
+.report-table th {
+  background: transparent;
+  position: static;
+}
+
+.report-table tbody tr {
+  cursor: default;
+}
+
+.over { color: var(--warn); }
+
+.deal-list {
+  list-style: none;
+  margin: 6px 0 0;
+  padding: 0;
+}
+
+.deal-list li {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  padding: 3px 0;
+  border-bottom: 1px solid #202942;
+}
+
+.deal-name {
+  flex: 1;
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.club-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.club-chip {
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 6px 9px;
+}
+
+.club-chip.crowded {
+  border-color: var(--warn);
+}

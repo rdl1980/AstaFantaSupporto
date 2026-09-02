@@ -1,11 +1,12 @@
 import { useState } from 'react'
 import { AuctionScreen } from './components/AuctionScreen'
+import { ReportScreen } from './components/ReportScreen'
 import { SetupScreen } from './components/SetupScreen'
 import { useStore } from './store'
 
 export default function App() {
   const { state, activeAuction } = useStore()
-  const [screen, setScreen] = useState<'setup' | 'auction'>(
+  const [screen, setScreen] = useState<'setup' | 'auction' | 'report'>(
     state.players.length > 0 ? 'auction' : 'setup',
   )
 
@@ -19,9 +20,7 @@ export default function App() {
     if (activeAuction.state.players.length === 0) setScreen('setup')
   }
 
-  return screen === 'setup' ? (
-    <SetupScreen onDone={() => setScreen('auction')} />
-  ) : (
-    <AuctionScreen onSetup={() => setScreen('setup')} />
-  )
+  if (screen === 'setup') return <SetupScreen onDone={() => setScreen('auction')} />
+  if (screen === 'report') return <ReportScreen onBack={() => setScreen('auction')} />
+  return <AuctionScreen onSetup={() => setScreen('setup')} onReport={() => setScreen('report')} />
 }

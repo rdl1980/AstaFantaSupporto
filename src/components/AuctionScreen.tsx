@@ -3,6 +3,7 @@ import { teamStats, useStore } from '../store'
 import type { AppState, Player } from '../types'
 import { AuctionPicker } from './AuctionsManager'
 import { CallBar } from './CallBar'
+import { LiveAdminPanel } from '../live/LiveAdminPanel'
 import { Listone } from './Listone'
 import { ModulesPanel } from './ModulesPanel'
 import { MyRoster } from './MyRoster'
@@ -143,6 +144,8 @@ export function AuctionScreen({
           un <b>Backup</b> e libera spazio eliminando un&apos;asta vecchia.
         </div>
       )}
+
+      <LiveAdminPanel inAsta={callPlayer} />
 
       {callPlayer && <CallBar player={callPlayer} onClose={() => setCallPlayer(null)} />}
 

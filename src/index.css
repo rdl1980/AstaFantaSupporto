@@ -1074,3 +1074,168 @@ td.status { font-size: 12px; white-space: nowrap; }
   color: var(--muted);
   text-decoration: line-through;
 }
+
+/* ---------- barra live del banditore ---------- */
+.live-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  padding: 6px 14px;
+  background: #14243a;
+  border-bottom: 1px solid var(--border);
+  font-size: 13px;
+}
+
+.live-codice {
+  font-family: ui-monospace, monospace;
+  letter-spacing: 1px;
+  color: var(--gold);
+}
+
+.live-chiamata { white-space: nowrap; }
+
+.live-conteggio {
+  font-weight: 800;
+  font-size: 17px;
+  min-width: 62px;
+  text-align: center;
+}
+
+.live-conteggio.fase-attesa { color: var(--muted); }
+.live-conteggio.fase-conteggio { color: var(--warn); }
+.live-conteggio.fase-scaduta { color: var(--green); }
+
+.live-dettagli {
+  flex-basis: 100%;
+  border-top: 1px solid var(--border);
+  margin-top: 4px;
+  padding-top: 6px;
+}
+
+.live-azioni-extra { display: flex; gap: 6px; flex-wrap: wrap; margin: 4px 0; }
+
+/* ---------- terminale del partecipante (mobile-first) ---------- */
+.pt {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  max-width: 560px;
+  margin: 0 auto;
+  padding: 10px 12px 20px;
+  gap: 10px;
+}
+
+.pt-centro { padding: 40px 20px; text-align: center; }
+
+.pt-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+}
+
+.pt-titolo { font-size: 18px; font-weight: 700; }
+
+.pt-corpo { display: flex; flex-direction: column; gap: 8px; }
+
+.pt-squadra {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  padding: 14px;
+  font-size: 16px;
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  cursor: pointer;
+}
+
+.pt-squadra:disabled { opacity: 0.45; }
+
+.pt-crediti {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 10px 12px;
+}
+
+.pt-crediti > div { display: flex; flex-direction: column; }
+.pt-num { font-size: 20px; color: var(--gold); }
+
+.pt-attesa {
+  text-align: center;
+  padding: 40px 10px;
+}
+
+.pt-chiamata {
+  background: var(--bg2);
+  border: 2px solid var(--accent);
+  border-radius: 12px;
+  padding: 14px;
+  text-align: center;
+}
+
+.pt-giocatore { font-size: 26px; font-weight: 800; line-height: 1.15; }
+
+.pt-conteggio {
+  font-size: 44px;
+  font-weight: 900;
+  letter-spacing: 2px;
+  margin: 6px 0;
+  min-height: 52px;
+}
+
+.pt-conteggio.fase-attesa { color: var(--muted); font-size: 30px; }
+.pt-conteggio.fase-conteggio { color: var(--warn); }
+.pt-conteggio.num-3 { color: var(--red); }
+.pt-conteggio.fase-scaduta { color: var(--green); font-size: 26px; }
+
+.pt-offerta { display: flex; flex-direction: column; gap: 2px; }
+.pt-num-grande { font-size: 34px; color: var(--gold); line-height: 1; }
+
+.pt-azioni { display: flex; flex-direction: column; gap: 8px; }
+
+.pt-piu {
+  padding: 20px;
+  font-size: 22px;
+  font-weight: 700;
+  background: var(--accent2);
+  border: none;
+  border-radius: 12px;
+  color: var(--text);
+  cursor: pointer;
+}
+
+.pt-piu:disabled { opacity: 0.4; }
+
+.pt-libera { display: flex; gap: 8px; }
+.pt-libera input { flex: 1; font-size: 18px; text-align: right; }
+.pt-libera .btn { font-size: 16px; padding: 10px 18px; }
+
+.pt-msg { text-align: center; margin: 2px 0; }
+.pt-piede { margin-top: auto; text-align: center; padding-top: 10px; }
+
+.pt-squadra-box {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 8px 10px;
+}
+
+.pt-squadra-head { display: flex; justify-content: space-between; align-items: baseline; }
+
+.pt-rosa { list-style: none; margin: 6px 0 0; padding: 0; }
+
+.pt-rosa li {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 0;
+}
+
+.pt-rosa-nome { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }

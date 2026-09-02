@@ -133,6 +133,48 @@ scelta, o quando lascia scoperti gli slot ancora da riempire (l'offerta massima 
 parte per ognuno). Sono avvisi, non blocchi: servono a intercettare l'errore di battitura — 650 al
 posto di 65 — senza impedirti di registrare quello che è successo davvero.
 
+## Asta live sincronizzata
+
+I partecipanti seguono e rilanciano dal telefono, mentre il banditore continua a usare l'app come
+sempre. Richiede un progetto Supabase gratuito: la messa in piedi è descritta in
+[supabase/README.md](supabase/README.md), la progettazione in
+[DESIGN-ASTA-LIVE.md](DESIGN-ASTA-LIVE.md).
+
+Nella schermata d'asta compare **Avvia sessione live**, che genera un codice stanza e un link
+`…/?asta=CODICE` da mandare al gruppo. Chi lo apre sceglie la propria squadra — una sola volta, poi
+quel dispositivo è legato a quella squadra — e si ritrova un terminale con i propri crediti, il
+giocatore in asta, l'offerta corrente e i pulsanti per rilanciare.
+
+### I tempi della chiamata
+
+Il conteggio segue la cadenza dell'asta vera: dopo l'ultima offerta si aspetta, poi parte *uno, due,
+tre*, e alla fine il giocatore è aggiudicato. Ogni rilancio fa ripartire tutto da capo. Dal Setup si
+configurano i due tempi:
+
+- **attesa prima del conteggio** — i secondi che passano dall'offerta all'inizio del conteggio;
+- **secondi fra uno, due e tre** — la cadenza dei tre numeri.
+
+Il conteggio non viaggia sulla rete: il server trasmette solo l'istante di scadenza, e ogni
+dispositivo ricava da sé la fase in cui si trova. Così tutti vedono lo stesso numero senza un flusso
+di messaggi, e chi si riconnette a metà conteggio si riallinea da solo. Per evitare che un telefono
+con l'ora sbagliata veda un conteggio diverso, all'avvio viene misurato lo scarto rispetto
+all'orologio del server.
+
+### Cosa decide il server
+
+Ogni rilancio è validato da una funzione Postgres che lavora sotto lock di riga: le offerte
+simultanee si accodano e vengono processate una alla volta, quindi a parità di cifra la prima
+arrivata vince e la seconda riceve "offerta superata". La stessa funzione verifica i crediti
+residui, l'offerta massima possibile lasciando un credito per ogni slot ancora da riempire, e che
+il ruolo del giocatore non sia già completo. Il client fa gli stessi calcoli per disabilitare i
+pulsanti, ma la decisione resta del server.
+
+```bash
+npm test
+```
+
+collauda le funzioni SQL su un Postgres in WASM, senza database installato.
+
 ## Report ed export
 
 Il pulsante **📊 Report** apre una schermata che legge l'asta e la racconta:

@@ -35,6 +35,9 @@ export function defaultConfig(): LeagueConfig {
     mantraPlanSlots: { P: 6, D: 10, C: 12, A: 7 },
     modulesText: DEFAULT_MODULES_TEXT,
     callMode: false,
+    rilancioMinimo: 1,
+    attesaSecondi: 5,
+    intervalloSecondi: 3,
   }
 }
 

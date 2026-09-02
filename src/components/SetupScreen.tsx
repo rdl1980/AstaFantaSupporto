@@ -4,6 +4,7 @@ import { parseListone } from '../parseListone'
 import { useStore } from '../store'
 import type { ClassicRole, Mode } from '../types'
 import { CLASSIC_ROLE_LABEL, CLASSIC_ROLE_ORDER } from '../types'
+import { durataTotale } from '../live/countdown'
 
 export function SetupScreen({ onDone }: { onDone: () => void }) {
   const { state, dispatch } = useStore()
@@ -142,6 +143,60 @@ export function SetupScreen({ onDone }: { onDone: () => void }) {
             ))}
           </div>
         )}
+      </section>
+
+      <section className="card">
+        <h2>Asta live</h2>
+        <p className="muted">
+          Tempi della chiamata quando l&apos;asta è sincronizzata con i telefoni dei partecipanti.
+          Dopo ogni offerta riparte l&apos;attesa, poi il conteggio: uno, due, tre, aggiudicato.
+        </p>
+        <div className="form-row">
+          <label>
+            Rilancio minimo
+            <input
+              type="number"
+              min={1}
+              value={config.rilancioMinimo}
+              onChange={(e) =>
+                dispatch({ type: 'setConfig', patch: { rilancioMinimo: Math.max(1, Number(e.target.value) || 1) } })
+              }
+            />
+          </label>
+          <label>
+            Attesa prima del conteggio (s)
+            <input
+              type="number"
+              min={0}
+              value={config.attesaSecondi}
+              onChange={(e) =>
+                dispatch({ type: 'setConfig', patch: { attesaSecondi: Math.max(0, Number(e.target.value) || 0) } })
+              }
+            />
+          </label>
+          <label>
+            Secondi fra uno, due e tre
+            <input
+              type="number"
+              min={1}
+              value={config.intervalloSecondi}
+              onChange={(e) =>
+                dispatch({ type: 'setConfig', patch: { intervalloSecondi: Math.max(1, Number(e.target.value) || 1) } })
+              }
+            />
+          </label>
+        </div>
+        <p className="muted small">
+          Una chiamata senza rilanci dura{' '}
+          <b>
+            {durataTotale({
+              attesaSecondi: config.attesaSecondi,
+              intervalloSecondi: config.intervalloSecondi,
+            })}
+            s
+          </b>
+          .
+        </p>
       </section>
 
       <section className="card">

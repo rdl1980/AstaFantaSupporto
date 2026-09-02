@@ -1,5 +1,12 @@
 # Asta Live Sincronizzata — progettazione
 
+> **Stato: realizzata.** Entrambe le fasi sono implementate. Lo schema e le funzioni sono
+> in [`supabase/`](supabase/), la messa in piedi in [supabase/README.md](supabase/README.md).
+> Restano da fare la prova con dispositivi veri e le decisioni aperte del §14.
+>
+> Due scelte sono cambiate rispetto alla prima stesura, ed è spiegato dove: i token non
+> stanno più nelle tabelle leggibili (§6) e il conteggio è derivato dalla scadenza (§7).
+
 Documento di lavoro per portare l'app da strumento locale a sessione d'asta condivisa.
 Nasce da una specifica scritta per un'applicazione diversa (con backend e database già
 esistenti): qui è riadattata a ciò che il progetto è davvero.
@@ -74,69 +81,24 @@ va rilasciata solo dopo una prova generale con dispositivi veri.
 
 ### Fase 1
 
-```sql
-create table sessione (
-  id            uuid primary key default gen_random_uuid(),
-  codice        text unique not null,          -- codice stanza, es. "CLASSIC-7K3Q"
-  nome          text not null,
-  modalita      text not null check (modalita in ('mantra','classic')),
-  budget        int  not null,
-  slot_config   jsonb not null,                -- slot per ruolo, copiati dalla config locale
-  admin_token   text not null,                 -- segreto del banditore
-  stato         text not null default 'idle'
-                check (stato in ('idle','active','paused','closed')),
-  creata_il     timestamptz not null default now()
-);
+Tabelle `sessione`, `squadra`, `assegnazione`, più `sessione_segreto` e `squadra_segreto` per
+i token (vedi §6). Lo schema autorevole è [`supabase/01-schema.sql`](supabase/01-schema.sql):
+qui basta ricordare due scelte.
 
-create table squadra (
-  id           uuid primary key default gen_random_uuid(),
-  sessione_id  uuid not null references sessione(id) on delete cascade,
-  nome         text not null,
-  ordine       int  not null,
-  claim_token  text                            -- chi ha rivendicato questa squadra
-);
+**I dati del giocatore sono denormalizzati** in `assegnazione` — nome, club e ruoli copiati
+accanto all'id. I telefoni dei partecipanti non hanno il listone: salvando solo l'id, ognuno
+dovrebbe importare lo stesso Excel per leggere un nome.
 
-create table assegnazione (
-  id             uuid primary key default gen_random_uuid(),
-  sessione_id    uuid not null references sessione(id) on delete cascade,
-  squadra_id     uuid not null references squadra(id) on delete cascade,
-  giocatore_id   int  not null,                -- Id del listone fantacalcio.it
-  giocatore_nome text not null,
-  club           text not null,
-  ruolo_classic  text not null,
-  ruoli_mantra   text,
-  prezzo         int  not null check (prezzo >= 1),
-  assegnato_il   timestamptz not null default now(),
-  unique (sessione_id, giocatore_id)
-);
-```
-
-**Perché i dati del giocatore sono denormalizzati** in `assegnazione`: i telefoni dei
-partecipanti non hanno il listone. Se salvassimo solo `giocatore_id`, ognuno dovrebbe
-importare lo stesso Excel per vedere un nome. Copiare nome, club e ruoli costa qualche byte
-e rende il tabellone leggibile da subito.
+**La configurazione della lega viaggia nella sessione** (`budget`, `slot_config`,
+`rilancio_minimo`, `attesa_secondi`, `intervallo_secondi`), così il server può validare i
+rilanci senza fidarsi di quello che dichiara il client.
 
 ### Fase 2
 
-```sql
-create table chiamata (
-  sessione_id          uuid primary key references sessione(id) on delete cascade,
-  giocatore_id         int,
-  giocatore_nome       text,
-  club                 text,
-  ruolo_classic        text,
-  ruoli_mantra         text,
-  offerta_attuale      int,
-  miglior_offerente_id uuid references squadra(id),
-  rilancio_minimo      int not null default 1,
-  stato                text not null default 'idle'
-                       check (stato in ('idle','active','paused')),
-  scadenza             timestamptz,
-  versione             bigint not null default 0   -- cresce a ogni cambio
-);
-```
+Una sola tabella `chiamata`, con **una sola riga per sessione**: il giocatore in asta,
+l'offerta corrente, il miglior offerente e la scadenza.
 
-Una sola riga per sessione: è anche il punto su cui si serializzano i rilanci.
+Quella riga è anche il punto su cui si serializzano i rilanci: è lì che si prende il lock.
 
 ## 6. Identità e sicurezza
 
@@ -147,8 +109,15 @@ Non servono account veri. Il flusso:
 3. Chi apre il link **rivendica una squadra** dall'elenco e riceve un `claim_token` salvato
    nel proprio `localStorage`. Da quel momento quella squadra è sua.
 
-**Da dire chiaramente:** in un'architettura solo-client la chiave pubblica di Supabase è
-dentro il bundle, quindi è visibile. La protezione viene dalle policy RLS e dalla funzione
+**Correzione rispetto alla prima stesura.** I token non abitano nelle tabelle che il client
+legge: `admin_token` e `claim_token` stanno in `sessione_segreto` e `squadra_segreto`, su cui
+RLS è attiva e non esiste alcuna policy, quindi sono irraggiungibili dal client. La tabella
+`squadra` espone solo un flag `presa`. Il motivo è duplice: la lettura è aperta a chi conosce
+il codice stanza, e soprattutto **le notifiche realtime spediscono la riga intera** a tutti i
+sottoscrittori — un token dentro `squadra` sarebbe finito nel telefono di ogni partecipante.
+
+**Da dire comunque chiaramente:** in un'architettura solo-client la chiave pubblica di
+Supabase è dentro il bundle, quindi è visibile. La protezione viene dalle policy RLS e dalla funzione
 di rilancio, non dal nascondere la chiave. Per una lega privata tra amici è adeguato: chi
 conoscesse il codice stanza potrebbe disturbare, ma il banditore può sempre correggere lo
 stato e rigenerare il codice. **Non è un sistema a prova di malintenzionato**, ed è giusto
@@ -161,7 +130,27 @@ Le policy RLS in sintesi:
   mai direttamente dal client;
 - rivendicazione di una squadra: consentita una sola volta, finché `claim_token` è nullo.
 
-## 7. Eventi e payload
+## 7. Il conteggio, e perché non viaggia sulla rete
+
+Il server trasmette **un solo dato temporale**: l'istante di scadenza della chiamata. Ogni
+dispositivo ricava da sé la fase — attesa, uno, due, tre — dalla scadenza e dai due parametri
+configurati. Non c'è nessun flusso di tick da mantenere sincronizzato, chi si riconnette a
+metà conteggio si riallinea da solo, e tutti vedono lo stesso numero nello stesso momento.
+
+I due tempi sono configurabili per lega: `attesa_secondi` (dall'ultima offerta all'inizio del
+conteggio) e `intervallo_secondi` (fra un numero e il successivo). Una chiamata senza rilanci
+dura quindi `attesa + 3 × intervallo`, e ogni rilancio la fa ripartire da capo.
+
+Resta un problema che il calcolo locale porta con sé: **l'orologio del dispositivo**. Un
+telefono indietro di dieci secondi mostrerebbe un conteggio sfasato e continuerebbe a
+rilanciare a chiamata chiusa. Per questo all'avvio si misura lo scarto rispetto a `ora_server()`
+e lo si applica a ogni calcolo. La decisione di accettare o rifiutare resta comunque del
+server, che usa il proprio `now()`.
+
+La logica è in [`src/live/countdown.ts`](src/live/countdown.ts), con i test in
+[`test/countdown.mjs`](test/countdown.mjs).
+
+## 8. Eventi e payload
 
 Con Supabase gli "eventi" non sono messaggi custom: sono cambi di riga sottoscritti dal
 client. È meno codice e un punto in meno dove sbagliare.
@@ -199,7 +188,7 @@ Risposta di `rilancia`:
 { "ok": false, "motivo": "chiamata_scaduta" }
 ```
 
-## 8. La funzione di rilancio (cuore della Fase 2)
+## 9. La funzione di rilancio (cuore della Fase 2)
 
 ```sql
 create or replace function rilancia(
@@ -227,7 +216,7 @@ volte**, in TypeScript per l'interfaccia e in SQL per la validazione. È una dup
 consapevole — il client non può essere creduto sulla parola — ma va tenuta allineata, ed è
 il punto più probabile di divergenza futura.
 
-## 9. Impatto sul client esistente
+## 10. Impatto sul client esistente
 
 Nuovi file, isolati in `src/live/`:
 
@@ -242,7 +231,7 @@ restano locali e identici. La sessione live è un livello che si affianca, non s
 Nel repo servono due variabili d'ambiente anche nel workflow di GitHub Actions, altrimenti
 la build pubblicata non sa a quale progetto Supabase parlare.
 
-## 10. Interfaccia del partecipante
+## 11. Interfaccia del partecipante
 
 Va **scritta mobile-first come schermata a sé**, non adattata dal layout a due colonne del
 banditore: sarebbe più lavoro e verrebbe peggio. Contenuto essenziale, leggibile con una
@@ -253,7 +242,7 @@ mano e a distanza di braccio:
 - in basso (Fase 2): pulsante grande **+1** e campo per l'offerta libera;
 - accesso secondario al tabellone completo di tutte le squadre.
 
-## 11. Rischi e prova generale
+## 12. Rischi e prova generale
 
 | Rischio | Mitigazione |
 |---|---|
@@ -266,14 +255,14 @@ mano e a distanza di braccio:
 Prima di usarla in un'asta vera serve una **prova con almeno tre dispositivi reali**,
 provocando disconnessioni e rilanci simultanei. Senza quella prova la Fase 2 non va usata.
 
-## 12. Stima
+## 13. Stima
 
 | | Lavoro | Realistico per la Classic |
 |---|---|---|
 | Fase 1 | schema, pubblicazione con ritentativi, schermata partecipante, prova | **Sì**, se si parte subito |
 | Fase 2 | chiamata, timer, funzione di rilancio, UI offerte, prova generale | No: serve tempo per provarla sul serio |
 
-## 13. Decisioni ancora aperte
+## 14. Decisioni ancora aperte
 
 1. Il timer di fine chiamata lo decide il banditore a mano o scade da solo? (Automatico
    significa che il server deve valutare la scadenza: si fa dentro `rilancia` e `assegna`,

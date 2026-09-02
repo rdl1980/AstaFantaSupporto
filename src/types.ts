@@ -70,6 +70,12 @@ export interface LeagueConfig {
   modulesText: string
   /** Modalita' chiamata: il click sul listone mette il giocatore in trattativa invece di aprire il dialog */
   callMode: boolean
+  /** Rilancio minimo consentito, in crediti */
+  rilancioMinimo: number
+  /** Secondi dall'ultima offerta all'inizio del conteggio */
+  attesaSecondi: number
+  /** Secondi fra un numero e il successivo del conteggio */
+  intervalloSecondi: number
 }
 
 export interface AppState {

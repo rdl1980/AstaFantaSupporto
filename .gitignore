@@ -25,3 +25,6 @@ dist-ssr
 
 # Dati quotazioni fantacalcio.it (non pubblicare)
 Quotazioni_*.xlsx
+
+# credenziali locali
+.env

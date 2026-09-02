@@ -19,16 +19,18 @@ Fatto = presente nell'app; le altre voci non sono ancora implementate.
 - Report di fine asta: spesa per reparto, affari e sovrapprezzi, confronto squadre, copertura club
 - Cronologia dell'asta filtrabile per squadra
 - Export Excel della rosa e del tabellone completo, rosa in testo per la chat
+- Asta live sincronizzata su Supabase: tabellone condiviso, rilanci dai telefoni,
+  conteggio "uno due tre" con tempi configurabili, validazione lato server
 - Modalità chiamata: barra di trattativa con offerta massima propria e degli avversari
 - Avvisi di sforamento del budget nel dialog e nella barra di chiamata
 
 ## Priorità alta
 
-### Asta live sincronizzata
-Sessione d'asta condivisa: i partecipanti seguono (e in prospettiva rilanciano)
-dal proprio telefono. Progettazione in [DESIGN-ASTA-LIVE.md](DESIGN-ASTA-LIVE.md):
-stack Supabase su piano gratuito, in due fasi — prima il tabellone condiviso in
-sola lettura, poi i rilanci validati lato server. Da decidere se procedere.
+### Prova generale dell'asta live
+Provare la sessione live con almeno tre dispositivi veri prima di usarla in
+un'asta che conta: rilanci simultanei, telefono che perde la linea e rientra,
+progetto Supabase risvegliato dalla pausa. Finché non è fatta, tenere pronta
+l'asta locale come piano di riserva.
 
 ### Immagine della rosa
 Export della rosa come immagine da condividere, oltre al testo e all'Excel già presenti.

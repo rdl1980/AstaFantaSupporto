@@ -24,6 +24,12 @@ Fatto = presente nell'app; le altre voci non sono ancora implementate.
 
 ## Priorità alta
 
+### Asta live sincronizzata
+Sessione d'asta condivisa: i partecipanti seguono (e in prospettiva rilanciano)
+dal proprio telefono. Progettazione in [DESIGN-ASTA-LIVE.md](DESIGN-ASTA-LIVE.md):
+stack Supabase su piano gratuito, in due fasi — prima il tabellone condiviso in
+sola lettura, poi i rilanci validati lato server. Da decidere se procedere.
+
 ### Immagine della rosa
 Export della rosa come immagine da condividere, oltre al testo e all'Excel già presenti.
 

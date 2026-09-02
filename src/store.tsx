@@ -176,12 +176,16 @@ function appReducer(state: AppState, action: Action): AppState {
       }
     }
     case 'purchase': {
+      const existing = state.purchases.find((p) => p.playerId === action.playerId)
       const others = state.purchases.filter((p) => p.playerId !== action.playerId)
       const purchase: Purchase = {
         playerId: action.playerId,
         teamId: action.teamId,
         price: Math.max(1, Math.round(action.price)),
-        ts: Date.now(),
+        // Correggere un acquisto gia' registrato non lo sposta in fondo alla
+        // cronologia: l'orario resta quello della chiamata originale. Altrimenti
+        // "annulla ultimo" finirebbe per cancellare il giocatore sbagliato.
+        ts: existing?.ts ?? Date.now(),
       }
       return { ...state, purchases: [...others, purchase] }
     }
@@ -189,7 +193,7 @@ function appReducer(state: AppState, action: Action): AppState {
       return { ...state, purchases: state.purchases.filter((p) => p.playerId !== action.playerId) }
     case 'undoLastPurchase': {
       if (state.purchases.length === 0) return state
-      const last = state.purchases.reduce((a, b) => (a.ts >= b.ts ? a : b))
+      const last = state.purchases.reduce((a, b) => (a.ts > b.ts ? a : b))
       return { ...state, purchases: state.purchases.filter((p) => p !== last) }
     }
     case 'toggleTarget': {
@@ -226,7 +230,9 @@ function appReducer(state: AppState, action: Action): AppState {
     case 'fullReset':
       return { config: defaultConfig(), players: [], purchases: [], targets: {}, listoneInfo: null }
     case 'restoreState':
-      return action.state
+      // Un backup salvato da una versione precedente puo' non avere i campi di
+      // config aggiunti dopo: senza questa normalizzazione l'app va in pagina bianca
+      return sanitize(action.state)
     default:
       return state
   }

@@ -5,6 +5,7 @@ import { AuctionPicker } from './AuctionsManager'
 import { CallBar } from './CallBar'
 import { LiveAdminPanel } from '../live/LiveAdminPanel'
 import { useCredenzialiBanditore } from '../live/banditore'
+import { annullaUltimoAcquisto } from '../live/sync'
 import { Listone } from './Listone'
 import { ModulesPanel } from './ModulesPanel'
 import { MyRoster } from './MyRoster'
@@ -97,7 +98,7 @@ export function AuctionScreen({
         <div className="topbar-right">
           <button
             className="btn ghost"
-            onClick={() => dispatch({ type: 'undoLastPurchase' })}
+            onClick={() => annullaUltimoAcquisto(dispatch, activeAuction.id, state.purchases)}
             disabled={state.purchases.length === 0}
             title="Annulla l'ultimo acquisto registrato (di qualsiasi squadra)"
           >

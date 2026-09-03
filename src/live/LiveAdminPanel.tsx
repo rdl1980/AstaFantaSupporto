@@ -9,9 +9,9 @@ import {
   assegna,
   creaSessione,
   mettiAllAsta,
-  pubblicaAssegnazione,
   useLive,
 } from './session'
+import { useSincronizzaAcquisti } from './sync'
 import type { CredenzialiBanditore } from './types'
 
 function useTick(attivo: boolean) {
@@ -46,6 +46,8 @@ export function LiveAdminPanel({
   const cercaRef = useRef<HTMLInputElement>(null)
 
   const live = useLive(cred?.sessioneId ?? null)
+  const { dispatch } = useStore()
+  useSincronizzaAcquisti(activeAuction.id, cred, live, state, dispatch)
   const chiamata = live.chiamata
   const attiva = chiamata?.stato === 'active' && !!chiamata.scadenza
   useTick(attiva)
@@ -113,12 +115,6 @@ export function LiveAdminPanel({
     } finally {
       setInCorso(false)
     }
-  }
-
-  /** Squadra live corrispondente a una squadra locale, accoppiate per posizione. */
-  function squadraLive(teamId: string): string | null {
-    const i = config.teams.findIndex((t) => t.id === teamId)
-    return live.squadre[i]?.id ?? null
   }
 
   async function chiama(p: Player) {
@@ -265,38 +261,6 @@ export function LiveAdminPanel({
               }
             >
               Applica i tempi del Setup alla sessione
-            </button>
-            <button
-              className="btn ghost small-btn"
-              title="Copia sul server tutti gli acquisti già registrati in locale"
-              onClick={async () => {
-                if (!live.sessione) return
-                setInCorso(true)
-                try {
-                  for (const pu of state.purchases) {
-                    const pl = state.players.find((x) => x.id === pu.playerId)
-                    const sq = squadraLive(pu.teamId)
-                    if (!pl || !sq) continue
-                    await pubblicaAssegnazione({
-                      sessioneId: cred.sessioneId,
-                      adminToken: cred.adminToken,
-                      squadraId: sq,
-                      giocatoreId: pl.id,
-                      nome: pl.name,
-                      club: pl.team,
-                      ruolo: pl.r,
-                      ruoliMantra: pl.rm.join(';'),
-                      prezzo: pu.price,
-                    })
-                  }
-                } catch (e) {
-                  setErrore(String((e as Error).message))
-                } finally {
-                  setInCorso(false)
-                }
-              }}
-            >
-              Allinea acquisti locali → server ({state.purchases.length})
             </button>
             <button
               className="btn ghost small-btn danger-text"

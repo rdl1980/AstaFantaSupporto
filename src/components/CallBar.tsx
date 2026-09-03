@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { rankAmongRole } from '../analysis'
 import { availableFor, maxBidFor, playerQt, useStore } from '../store'
+import { rimuoviAcquisto } from '../live/sync'
 import type { Player } from '../types'
 
 /**
@@ -9,7 +10,7 @@ import type { Player } from '../types'
  * registrare l'assegnazione senza aprire il dialog.
  */
 export function CallBar({ player, onClose }: { player: Player; onClose: () => void }) {
-  const { state, dispatch, suggestions, purchaseByPlayer, myTeamId } = useStore()
+  const { state, dispatch, suggestions, purchaseByPlayer, myTeamId, activeAuction } = useStore()
   const { config } = state
   const existing = purchaseByPlayer.get(player.id)
   const target = state.targets[player.id]
@@ -132,7 +133,7 @@ export function CallBar({ player, onClose }: { player: Player; onClose: () => vo
             <button
               className="btn danger small-btn"
               onClick={() => {
-                dispatch({ type: 'removePurchase', playerId: player.id })
+                rimuoviAcquisto(dispatch, activeAuction.id, player.id)
                 onClose()
               }}
             >

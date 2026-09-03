@@ -175,6 +175,18 @@ di messaggi, e chi si riconnette a metà conteggio si riallinea da solo. Per evi
 con l'ora sbagliata veda un conteggio diverso, all'avvio viene misurato lo scarto rispetto
 all'orologio del server.
 
+### Gli acquisti restano allineati nei due sensi
+
+Tutto il resto dell'app — rosa, budget, scarsità, moduli, report, export — legge gli acquisti
+dell'asta locale. Perciò, con una sessione live attiva, i due lati si tengono allineati da soli: un
+giocatore aggiudicato dai telefoni compare subito nell'app del banditore, e un acquisto registrato a
+mano nell'app sale sul server, così i partecipanti lo vedono nel loro tabellone e nei budget.
+
+L'allineamento aggiunge e corregge; cancella soltanto ciò che il server aveva e non ha più. Uno
+svincolo o un *Annulla ultimo* viene quindi propagato anche alla sessione live, altrimenti il
+giocatore ricomparirebbe dopo un istante. Va da sé che gli acquisti si gestiscono dall'app: se si
+cancella una riga direttamente sul database mentre l'app è aperta, questa la rimetterà al suo posto.
+
 ### Cosa decide il server
 
 Ogni rilancio è validato da una funzione Postgres che lavora sotto lock di riga: le offerte

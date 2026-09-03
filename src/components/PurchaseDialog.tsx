@@ -1,10 +1,11 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { rankAmongRole } from '../analysis'
 import { availableFor, maxBidFor, playerQt, teamStats, useStore } from '../store'
+import { rimuoviAcquisto } from '../live/sync'
 import type { Player } from '../types'
 
 export function PurchaseDialog({ player, onClose }: { player: Player; onClose: () => void }) {
-  const { state, dispatch, suggestions, purchaseByPlayer, myTeamId } = useStore()
+  const { state, dispatch, suggestions, purchaseByPlayer, myTeamId, activeAuction } = useStore()
   const existing = purchaseByPlayer.get(player.id)
   const target = state.targets[player.id]
   const [price, setPrice] = useState<string>(existing ? String(existing.price) : '')
@@ -161,7 +162,7 @@ export function PurchaseDialog({ player, onClose }: { player: Player; onClose: (
             <button
               className="btn danger"
               onClick={() => {
-                dispatch({ type: 'removePurchase', playerId: player.id })
+                rimuoviAcquisto(dispatch, activeAuction.id, player.id)
                 onClose()
               }}
             >

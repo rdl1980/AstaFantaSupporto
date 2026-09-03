@@ -133,6 +133,13 @@ export type Action =
   | { type: 'setTarget'; playerId: number; patch: Partial<Target> }
   | { type: 'resetAuction' }
   | { type: 'fullReset' }
+  | {
+      /** Riporta nell'asta locale gli acquisti registrati nella sessione live */
+      type: 'mergeLivePurchases'
+      items: Purchase[]
+      /** Giocatori che erano sul server e non ci sono piu': vanno tolti anche qui */
+      remove: number[]
+    }
   | { type: 'restoreState'; state: AppState }
   | {
       type: 'createAuction'
@@ -189,6 +196,34 @@ function appReducer(state: AppState, action: Action): AppState {
         ts: existing?.ts ?? Date.now(),
       }
       return { ...state, purchases: [...others, purchase] }
+    }
+    case 'mergeLivePurchases': {
+      // Si aggiunge, si corregge, e si cancella soltanto cio' che il chiamante
+      // sa essere stato rimosso dal server: un acquisto registrato solo in
+      // locale non deve sparire per il fatto di non essere ancora lassu'.
+      const perId = new Map(state.purchases.map((p) => [p.playerId, p]))
+      let cambiato = false
+      for (const item of action.items) {
+        const attuale = perId.get(item.playerId)
+        if (!attuale) {
+          perId.set(item.playerId, item)
+          cambiato = true
+        } else if (attuale.teamId !== item.teamId || attuale.price !== item.price) {
+          // L'orario resta quello della chiamata originale: quello del server e'
+          // l'istante in cui la riga e' stata scritta lassu', e per gli acquisti
+          // caricati in blocco sarebbe tutto lo stesso minuto, appiattendo la
+          // cronologia mostrata nel report.
+          perId.set(item.playerId, { ...item, ts: attuale.ts })
+          cambiato = true
+        }
+      }
+      for (const id of action.remove) {
+        if (perId.delete(id)) cambiato = true
+      }
+      // Nessuna differenza: si restituisce lo stato invariato, cosi' il
+      // contenitore non ricrea nulla e non si innescano cicli di render.
+      if (!cambiato) return state
+      return { ...state, purchases: [...perId.values()] }
     }
     case 'removePurchase':
       return { ...state, purchases: state.purchases.filter((p) => p.playerId !== action.playerId) }

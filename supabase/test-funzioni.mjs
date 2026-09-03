@@ -196,8 +196,8 @@ const durata = await call(
   'select extract(epoch from (scadenza - now())) as s from chiamata where sessione_id=$1',
   [sid],
 )
-// attesa 5 + (1→2) 3 + due volte (2→3) 4 = 16 secondi
-verifica('la scadenza somma attesa, 1→2 e due volte 2→3', Math.abs(Number(durata.s) - 16) < 1, String(durata.s))
+// attesa 5 + (1→2) 3 + (2→3) 4 = 12 secondi: al "tre" la chiamata e' chiusa
+verifica('la scadenza coincide con il tre', Math.abs(Number(durata.s) - 12) < 1, String(durata.s))
 await rpc('annulla_chiamata', { p_sessione: sid, p_admin_token: admin })
 
 // ------------------------------------------- chiusura di una chiamata scaduta --

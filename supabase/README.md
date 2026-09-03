@@ -25,7 +25,11 @@ che era già pubblicata.
 
 **Su un progetto già avviato** va eseguito anche `04-tempi-separati.sql`, una volta
 sola: separa i due intervalli del conteggio (uno→due e due→tre), che prima erano un
-unico valore. Dopo di esso, rieseguire `02-functions.sql`.
+unico valore, ed elimina le vecchie versioni delle funzioni. Dopo di esso, rieseguire
+`02-functions.sql`.
+
+La scadenza di una chiamata coincide con il &ldquo;tre&rdquo;: `attesa + (1→2) + (2→3)`.
+Da quell'istante `rilancia` rifiuta le offerte con `chiamata_scaduta`.
 
 ## 3. Copiare le credenziali
 

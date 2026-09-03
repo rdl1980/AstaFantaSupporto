@@ -170,10 +170,12 @@ configurano i due tempi:
 - **secondi da uno a due** e **secondi da due a tre** — la cadenza dei numeri, regolabile
   separatamente per i due intervalli.
 
-Il &ldquo;tre&rdquo; resta in vista per gli stessi secondi dell'intervallo due→tre, che è il battito
-che nell'asta vera separa l'ultimo numero dal colpo di martello. Subito dopo l'aggiudicazione, il
-giocatore e la squadra che se l'è preso restano a schermo per tre secondi: il server ha già chiuso
-tutto, l'attesa è solo di facciata perché si faccia in tempo a leggere com'è andata.
+Il &ldquo;tre&rdquo; è il colpo di martello: da quell'istante **il server non accetta più offerte** e il
+giocatore è aggiudicato. Sullo schermo &ldquo;TRE&rdquo; e &ldquo;AGGIUDICATO&rdquo; compaiono insieme e
+restano per tre secondi, con il prezzo e la squadra che se l'è preso — il tempo di far leggere com'è
+finita. Quei tre secondi sono solo di facciata sul singolo dispositivo: l'asta è già chiusa e si può
+chiamare subito il giocatore successivo. Se la chiamata scade senza offerte compare solo il
+&ldquo;tre&rdquo;, perché non c'è nulla da aggiudicare.
 
 Il conteggio non viaggia sulla rete: il server trasmette solo l'istante di scadenza, e ogni
 dispositivo ricava da sé la fase in cui si trova. Così tutti vedono lo stesso numero senza un flusso

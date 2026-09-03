@@ -154,7 +154,7 @@ export function SetupScreen({ onDone }: { onDone: () => void }) {
         <h2>Asta live</h2>
         <p className="muted">
           Tempi della chiamata quando l&apos;asta è sincronizzata con i telefoni dei partecipanti.
-          Dopo ogni offerta riparte l&apos;attesa, poi il conteggio: uno, due, tre, aggiudicato.
+          Dopo ogni offerta riparte l&apos;attesa, poi il conteggio: uno, due, tre. Al tre è aggiudicato.
         </p>
         <div className="form-row">
           <label>
@@ -212,8 +212,8 @@ export function SetupScreen({ onDone }: { onDone: () => void }) {
             })}
             s
           </b>
-          : il &ldquo;tre&rdquo; resta in vista per gli stessi secondi dell&apos;intervallo due→tre, poi il
-          giocatore è aggiudicato e l&apos;esito resta a schermo per 3 secondi.
+          : al &ldquo;tre&rdquo; le offerte si chiudono e il giocatore è aggiudicato. &ldquo;TRE&rdquo; e
+          &ldquo;AGGIUDICATO&rdquo; restano insieme a schermo per 3 secondi.
         </p>
       </section>
 

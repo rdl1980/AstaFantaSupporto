@@ -122,12 +122,12 @@ verifica('offerta oltre il massimo rifiutata', r.ok === false && r.motivo === 'c
 r = await bid(squadre[0].id, 'token-falso', 50)
 verifica('token falso rifiutato', r.ok === false && r.motivo === 'non_autorizzato')
 
-// La scadenza deve sommare attesa + (1→2) + due volte (2→3): 5 + 2 + 12 = 19s
+// La scadenza coincide con il "tre": attesa 5 + (1→2) 2 + (2→3) 6 = 13s
 const chiam = (await db.from('chiamata').select('scadenza').eq('sessione_id', sid)).data[0]
 const durataChiamata = (new Date(chiam.scadenza).getTime() - Date.now()) / 1000
 verifica(
-  `durata della chiamata con intervalli distinti (${durataChiamata.toFixed(1)}s)`,
-  Math.abs(durataChiamata - 19) < 1.5,
+  `la chiamata si chiude al tre (${durataChiamata.toFixed(1)}s, attesi 13)`,
+  Math.abs(durataChiamata - 13) < 1.5,
   String(durataChiamata),
 )
 

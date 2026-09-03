@@ -250,7 +250,10 @@ function Terminale({
       {!attiva && esitoChiamata ? (
         <div className="pt-chiamata pt-esito">
           <div className="pt-giocatore">{esitoChiamata.giocatore}</div>
-          <div className="pt-conteggio fase-scaduta">AGGIUDICATO</div>
+          <div className="pt-conteggio fase-scaduta">
+            TRE
+            <div className="pt-aggiudicato">AGGIUDICATO</div>
+          </div>
           <div className="pt-offerta">
             <b className="pt-num-grande">{esitoChiamata.prezzo}</b>
             <span className="muted">
@@ -272,6 +275,10 @@ function Terminale({
             </div>
             <div className={`pt-conteggio fase-${c?.fase} ${c?.fase === 'conteggio' ? 'num-' + c.numero : ''}`}>
               {c ? etichetta(c) : ''}
+              {/* Senza offerte non c'e' nulla da aggiudicare: resta solo il tre */}
+              {c?.fase === 'scaduta' && chiamata?.miglior_offerente_id && (
+                <div className="pt-aggiudicato">AGGIUDICATO</div>
+              )}
             </div>
             <div className="pt-offerta">
               <span className="muted small">Offerta attuale</span>

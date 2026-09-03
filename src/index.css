@@ -1268,3 +1268,12 @@ td.status { font-size: 12px; white-space: nowrap; }
 }
 
 .pt-esito { border-color: var(--green); }
+
+.pt-aggiudicato {
+  font-size: 20px;
+  letter-spacing: 1px;
+  color: var(--green);
+  margin-top: 2px;
+}
+
+.live-aggiudicato { color: var(--green); font-size: 13px; }

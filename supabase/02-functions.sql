@@ -213,7 +213,7 @@ begin
     ruolo_classic = p_ruolo, ruoli_mantra = p_ruoli_mantra,
     offerta_attuale = nullif(p_base, 0), miglior_offerente_id = null,
     stato = 'active',
-    scadenza = now() + make_interval(secs => s.attesa_secondi + s.secondi_1_2 + 2 * s.secondi_2_3),
+    scadenza = now() + make_interval(secs => s.attesa_secondi + s.secondi_1_2 + s.secondi_2_3),
     versione = versione + 1
   where sessione_id = p_sessione;
 
@@ -237,6 +237,9 @@ end
 $$;
 
 -- Cuore della fase 2.
+--
+-- La scadenza coincide con il "tre": da quell'istante le offerte sono chiuse.
+-- Non c'e' nessun margine dopo, il colpo di martello e' li'.
 create or replace function rilancia(
   p_sessione uuid, p_squadra uuid, p_claim_token text, p_offerta int
 ) returns jsonb language plpgsql security definer as $$
@@ -299,7 +302,7 @@ begin
     offerta_attuale = p_offerta,
     miglior_offerente_id = p_squadra,
     -- ogni rilancio fa ripartire l'attesa prima del conteggio
-    scadenza = now() + make_interval(secs => s.attesa_secondi + s.secondi_1_2 + 2 * s.secondi_2_3),
+    scadenza = now() + make_interval(secs => s.attesa_secondi + s.secondi_1_2 + s.secondi_2_3),
     versione = versione + 1
   where sessione_id = p_sessione;
 

@@ -178,7 +178,12 @@ export function LiveAdminPanel({
             <span className="muted">{chiamata!.offerta_attuale ?? '—'}</span>{' '}
             {nomeMigliore && <span className="ok small">{nomeMigliore}</span>}
           </span>
-          <span className={`live-conteggio fase-${c?.fase}`}>{c ? etichetta(c) : ''}</span>
+          <span className={`live-conteggio fase-${c?.fase}`}>
+            {c ? etichetta(c) : ''}
+            {c?.fase === 'scaduta' && chiamata?.miglior_offerente_id && (
+              <span className="live-aggiudicato"> AGGIUDICATO</span>
+            )}
+          </span>
           <button
             className="btn primary small-btn"
             disabled={!chiamata!.miglior_offerente_id}

@@ -45,7 +45,8 @@ const sess = await rpc('crea_sessione', {
   p_squadre: ['Prova A', 'Prova B', 'Prova C'],
   p_rilancio_minimo: 1,
   p_attesa_secondi: 5,
-  p_intervallo_secondi: 3,
+  p_secondi_1_2: 2,
+  p_secondi_2_3: 6,
 })
 verifica('crea_sessione risponde', sess?.ok === true, JSON.stringify(sess))
 verifica(`tempo di risposta accettabile (${Date.now() - t0}ms)`, Date.now() - t0 < 3000)
@@ -120,6 +121,15 @@ r = await bid(squadre[1].id, tokB, 4000)
 verifica('offerta oltre il massimo rifiutata', r.ok === false && r.motivo === 'crediti_insufficienti', JSON.stringify(r))
 r = await bid(squadre[0].id, 'token-falso', 50)
 verifica('token falso rifiutato', r.ok === false && r.motivo === 'non_autorizzato')
+
+// La scadenza deve sommare attesa + (1→2) + due volte (2→3): 5 + 2 + 12 = 19s
+const chiam = (await db.from('chiamata').select('scadenza').eq('sessione_id', sid)).data[0]
+const durataChiamata = (new Date(chiam.scadenza).getTime() - Date.now()) / 1000
+verifica(
+  `durata della chiamata con intervalli distinti (${durataChiamata.toFixed(1)}s)`,
+  Math.abs(durataChiamata - 19) < 1.5,
+  String(durataChiamata),
+)
 
 console.log('\n== Offerte simultanee (la corsa vera) ==')
 const esiti = await Promise.all([

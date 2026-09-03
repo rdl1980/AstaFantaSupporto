@@ -21,3 +21,9 @@ end $$;
 
 alter table sessione add constraint sessione_secondi_1_2_check check (secondi_1_2 >= 1);
 alter table sessione add constraint sessione_secondi_2_3_check check (secondi_2_3 >= 1);
+
+-- Le vecchie versioni delle funzioni restano in giro: Postgres tiene separate le
+-- firme con parametri diversi, e quelle vecchie puntano a una colonna che non
+-- esiste piu'. Vanno eliminate, altrimenti restano li' a fallire.
+drop function if exists crea_sessione(text, text, int, jsonb, text[], int, int, int);
+drop function if exists aggiorna_impostazioni(uuid, text, int, int, int);

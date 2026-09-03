@@ -147,6 +147,14 @@ sempre. Richiede un progetto Supabase gratuito: la messa in piedi è descritta i
 [supabase/README.md](supabase/README.md), la progettazione in
 [DESIGN-ASTA-LIVE.md](DESIGN-ASTA-LIVE.md).
 
+### Come si manda un giocatore all'asta
+
+Con la sessione live avviata, nella barra c'è il campo **"Chi va all'asta? scrivi il nome…"**: si
+digitano due lettere, compaiono i nomi, e con un clic (o `Invio` sul primo) il giocatore parte. In
+alternativa lo si clicca nel listone e poi si preme **🔨 Metti all'asta**. Non serve accendere nulla:
+con una sessione live attiva il clic sul listone apre sempre la trattativa, e l'interruttore
+*Chiamata* — che serve solo per l'asta in locale — sparisce dalla barra.
+
 Nella schermata d'asta compare **Avvia sessione live**, che genera un codice stanza e un link
 `…/?asta=CODICE` da mandare al gruppo. Chi lo apre sceglie la propria squadra — una sola volta, poi
 quel dispositivo è legato a quella squadra — e si ritrova un terminale con i propri crediti, il

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { totalSlots, useStore } from '../store'
 import type { Player } from '../types'
 import { liveDisponibile, oraServer } from './client'
@@ -14,26 +14,6 @@ import {
 } from './session'
 import type { CredenzialiBanditore } from './types'
 
-const CHIAVE = 'asta-fanta-banditore-v1'
-
-function leggiCred(astaId: string): CredenzialiBanditore | null {
-  try {
-    const raw = localStorage.getItem(`${CHIAVE}:${astaId}`)
-    return raw ? (JSON.parse(raw) as CredenzialiBanditore) : null
-  } catch {
-    return null
-  }
-}
-
-function salvaCred(astaId: string, c: CredenzialiBanditore | null) {
-  try {
-    if (c) localStorage.setItem(`${CHIAVE}:${astaId}`, JSON.stringify(c))
-    else localStorage.removeItem(`${CHIAVE}:${astaId}`)
-  } catch {
-    /* storage non disponibile */
-  }
-}
-
 function useTick(attivo: boolean) {
   const [, setN] = useState(0)
   useEffect(() => {
@@ -48,21 +28,22 @@ function useTick(attivo: boolean) {
  * Se la sessione non è avviata, o Supabase non è configurato, tutto il resto
  * dell'app continua a funzionare esattamente come prima.
  */
-export function LiveAdminPanel({ inAsta }: { inAsta: Player | null }) {
+export function LiveAdminPanel({
+  inAsta,
+  cred,
+  setCred,
+}: {
+  inAsta: Player | null
+  cred: CredenzialiBanditore | null
+  setCred: (c: CredenzialiBanditore | null) => void
+}) {
   const { state, activeAuction, myTeamId } = useStore()
   const { config } = state
-  const [cred, setCred] = useState<CredenzialiBanditore | null>(() => leggiCred(activeAuction.id))
   const [errore, setErrore] = useState<string | null>(null)
   const [inCorso, setInCorso] = useState(false)
   const [apri, setApri] = useState(false)
-
-  // Cambiando asta locale cambiano anche le credenziali della sessione live:
-  // e' l'aggiustamento di stato in render suggerito da React, non un effetto.
-  const [astaVista, setAstaVista] = useState(activeAuction.id)
-  if (astaVista !== activeAuction.id) {
-    setAstaVista(activeAuction.id)
-    setCred(leggiCred(activeAuction.id))
-  }
+  const [cerca, setCerca] = useState('')
+  const cercaRef = useRef<HTMLInputElement>(null)
 
   const live = useLive(cred?.sessioneId ?? null)
   const chiamata = live.chiamata
@@ -85,6 +66,20 @@ export function LiveAdminPanel({ inAsta }: { inAsta: Player | null }) {
   }, [cred, attiva, c?.fase, chiamata?.miglior_offerente_id])
 
   const nomeMigliore = live.squadre.find((s) => s.id === chiamata?.miglior_offerente_id)?.nome
+
+  // Chi banditore sente il nome e lo digita: la ricerca sta qui, accanto al
+  // pulsante, invece di obbligare a passare dal listone e da un secondo comando.
+  const gia = useMemo(
+    () => new Set(live.assegnazioni.map((a) => a.giocatore_id)),
+    [live.assegnazioni],
+  )
+  const suggeriti = useMemo(() => {
+    const q = cerca.trim().toLowerCase()
+    if (q.length < 2) return []
+    return state.players
+      .filter((p) => !p.ceduto && !gia.has(p.id) && p.name.toLowerCase().includes(q))
+      .slice(0, 6)
+  }, [cerca, state.players, gia])
 
   const linkPartecipanti = useMemo(() => {
     if (!cred) return ''
@@ -111,9 +106,7 @@ export function LiveAdminPanel({ inAsta }: { inAsta: Player | null }) {
         attesaSecondi: config.attesaSecondi,
         intervalloSecondi: config.intervalloSecondi,
       })
-      const nuove = { codice: r.codice, sessioneId: r.sessioneId, adminToken: r.adminToken }
-      salvaCred(activeAuction.id, nuove)
-      setCred(nuove)
+      setCred({ codice: r.codice, sessioneId: r.sessioneId, adminToken: r.adminToken })
       setApri(true)
     } catch (e) {
       setErrore(String((e as Error).message ?? e))
@@ -201,14 +194,46 @@ export function LiveAdminPanel({ inAsta }: { inAsta: Player | null }) {
           </button>
         </>
       ) : (
-        <button
-          className="btn primary small-btn"
-          disabled={!inAsta}
-          title={inAsta ? `Metti all'asta ${inAsta.name}` : 'Scegli prima un giocatore dal listone'}
-          onClick={() => inAsta && void chiama(inAsta)}
-        >
-          🔨 Metti all&apos;asta{inAsta ? ` ${inAsta.name}` : ''}
-        </button>
+        <div className="live-chiama">
+          <input
+            ref={cercaRef}
+            className="live-cerca"
+            placeholder="Chi va all'asta? scrivi il nome…"
+            value={cerca}
+            onChange={(e) => setCerca(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && suggeriti[0]) {
+                void chiama(suggeriti[0])
+                setCerca('')
+              }
+              if (e.key === 'Escape') setCerca('')
+            }}
+          />
+          {suggeriti.length > 0 && (
+            <div className="live-suggeriti">
+              {suggeriti.map((p) => (
+                <button
+                  key={p.id}
+                  className="btn small-btn"
+                  onClick={() => {
+                    void chiama(p)
+                    setCerca('')
+                  }}
+                >
+                  {p.name} <span className="muted">{p.team}</span>
+                </button>
+              ))}
+            </div>
+          )}
+          {inAsta && (
+            <button className="btn primary small-btn" onClick={() => void chiama(inAsta)}>
+              🔨 Metti all&apos;asta {inAsta.name}
+            </button>
+          )}
+          {!inAsta && cerca.trim().length < 2 && (
+            <span className="muted small">oppure clicca un giocatore nel listone</span>
+          )}
+        </div>
       )}
 
       <button className="btn ghost small-btn" onClick={() => setApri((v) => !v)}>
@@ -277,7 +302,6 @@ export function LiveAdminPanel({ inAsta }: { inAsta: Player | null }) {
               className="btn ghost small-btn danger-text"
               onClick={() => {
                 if (confirm('Scollegare questa asta dalla sessione live? I dati sul server restano.')) {
-                  salvaCred(activeAuction.id, null)
                   setCred(null)
                 }
               }}

@@ -1239,3 +1239,24 @@ td.status { font-size: 12px; white-space: nowrap; }
 }
 
 .pt-rosa-nome { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+.live-chiama {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  position: relative;
+}
+
+.live-cerca {
+  width: 230px;
+  border-color: var(--accent);
+}
+
+.live-suggeriti {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+
+.live-suggeriti .btn { font-size: 12px; padding: 3px 8px; }

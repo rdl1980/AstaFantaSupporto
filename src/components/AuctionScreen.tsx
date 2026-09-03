@@ -4,6 +4,7 @@ import type { AppState, Player } from '../types'
 import { AuctionPicker } from './AuctionsManager'
 import { CallBar } from './CallBar'
 import { LiveAdminPanel } from '../live/LiveAdminPanel'
+import { useCredenzialiBanditore } from '../live/banditore'
 import { Listone } from './Listone'
 import { ModulesPanel } from './ModulesPanel'
 import { MyRoster } from './MyRoster'
@@ -21,16 +22,19 @@ export function AuctionScreen({
   onSetup: () => void
   onReport: () => void
 }) {
-  const { state, dispatch, myTeamId, saveError } = useStore()
+  const { state, dispatch, myTeamId, saveError, activeAuction } = useStore()
+  const [credBanditore, setCredBanditore] = useCredenzialiBanditore(activeAuction.id)
   const [tab, setTab] = useState<Tab>('rosa')
   const [dialogPlayer, setDialogPlayer] = useState<Player | null>(null)
   const [callPlayer, setCallPlayer] = useState<Player | null>(null)
 
-  // In modalità chiamata il click sul listone mette il giocatore in trattativa
-  // nella barra; altrove (rosa, squadre, obiettivi) apre sempre il dialog,
-  // perché lì si va per correggere un acquisto, non per farne uno.
+  // Con una sessione live avviata il click sul listone mette sempre il giocatore
+  // in trattativa: pretendere anche l'interruttore "Chiamata" acceso significava
+  // avere due condizioni nascoste, e il pulsante "Metti all'asta" restava grigio
+  // senza che si capisse perché. Altrove (rosa, squadre, obiettivi) si apre
+  // comunque il dialog, perché lì si va per correggere un acquisto.
   const pickFromListone = (p: Player) =>
-    state.config.callMode ? setCallPlayer(p) : setDialogPlayer(p)
+    state.config.callMode || credBanditore ? setCallPlayer(p) : setDialogPlayer(p)
 
   const myStats = teamStats(state, myTeamId)
 
@@ -115,16 +119,20 @@ export function AuctionScreen({
               }}
             />
           </label>
-          <button
-            className={`btn ${state.config.callMode ? 'primary' : 'ghost'}`}
-            onClick={() => {
-              dispatch({ type: 'setConfig', patch: { callMode: !state.config.callMode } })
-              setCallPlayer(null)
-            }}
-            title="Modalità chiamata: il click sul listone apre la barra di trattativa invece del dialog"
-          >
-            🔨 Chiamata
-          </button>
+          {/* Con una sessione live la trattativa e' sempre attiva: l'interruttore
+              non farebbe nulla, e un comando che non fa nulla confonde. */}
+          {!credBanditore && (
+            <button
+              className={`btn ${state.config.callMode ? 'primary' : 'ghost'}`}
+              onClick={() => {
+                dispatch({ type: 'setConfig', patch: { callMode: !state.config.callMode } })
+                setCallPlayer(null)
+              }}
+              title="Modalità chiamata: il click sul listone apre la barra di trattativa invece del dialog"
+            >
+              🔨 Chiamata
+            </button>
+          )}
           <button
             className="btn ghost"
             onClick={onReport}
@@ -145,7 +153,7 @@ export function AuctionScreen({
         </div>
       )}
 
-      <LiveAdminPanel inAsta={callPlayer} />
+      <LiveAdminPanel inAsta={callPlayer} cred={credBanditore} setCred={setCredBanditore} />
 
       {callPlayer && <CallBar player={callPlayer} onClose={() => setCallPlayer(null)} />}
 

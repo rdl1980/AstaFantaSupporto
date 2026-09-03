@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useStore } from '../store'
 import type { Mode } from '../types'
-import { MODE_LABEL, otherMode } from '../types'
+import { MAX_PARTECIPANTI, MIN_PARTECIPANTI, MODE_LABEL, otherMode } from '../types'
 
 function autoName(mode: Mode): string {
   return `Asta ${MODE_LABEL[mode]}`
@@ -15,6 +15,7 @@ export function NewAuctionDialog({ onClose }: { onClose: () => void }) {
   const [name, setName] = useState(autoName(suggested))
   const [nameTouched, setNameTouched] = useState(false)
   const [copyConfig, setCopyConfig] = useState(true)
+  const [teamCount, setTeamCount] = useState(state.config.teams.length)
   const [copyListone, setCopyListone] = useState(state.players.length > 0)
   const [copyTargets, setCopyTargets] = useState(false)
 
@@ -24,6 +25,8 @@ export function NewAuctionDialog({ onClose }: { onClose: () => void }) {
   }
 
   const targetCount = Object.keys(state.targets).length
+  const countValido =
+    Number.isInteger(teamCount) && teamCount >= MIN_PARTECIPANTI && teamCount <= MAX_PARTECIPANTI
 
   return (
     <div className="dialog-backdrop" onMouseDown={(e) => e.target === e.currentTarget && onClose()}>
@@ -51,6 +54,30 @@ export function NewAuctionDialog({ onClose }: { onClose: () => void }) {
             }}
           />
         </label>
+
+        <label className="price-label">
+          Numero di partecipanti
+          <input
+            className="auction-name-input"
+            type="number"
+            min={MIN_PARTECIPANTI}
+            max={MAX_PARTECIPANTI}
+            value={teamCount}
+            onChange={(e) => setTeamCount(Number(e.target.value))}
+          />
+        </label>
+        {/* Si lascia scrivere qualsiasi cifra e si blocca la creazione: correggere
+            il numero mentre lo si digita darebbe l'impressione di un campo impazzito. */}
+        {countValido ? (
+          <p className="muted small">
+            Da {MIN_PARTECIPANTI} a {MAX_PARTECIPANTI}. <b>Si sceglie adesso e non si cambia più</b>: i
+            nomi delle squadre restano invece modificabili quando vuoi.
+          </p>
+        ) : (
+          <p className="error small">
+            Servono da {MIN_PARTECIPANTI} a {MAX_PARTECIPANTI} partecipanti.
+          </p>
+        )}
 
         <div className="mode-choice">
           <span className="muted small">Modalità</span>
@@ -104,8 +131,17 @@ export function NewAuctionDialog({ onClose }: { onClose: () => void }) {
           </button>
           <button
             className="btn primary"
+            disabled={!countValido}
             onClick={() => {
-              dispatch({ type: 'createAuction', name, mode, copyConfig, copyListone, copyTargets })
+              dispatch({
+                type: 'createAuction',
+                name,
+                mode,
+                teamCount,
+                copyConfig,
+                copyListone,
+                copyTargets,
+              })
               onClose()
             }}
           >

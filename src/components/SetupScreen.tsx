@@ -89,13 +89,13 @@ export function SetupScreen({ onDone }: { onDone: () => void }) {
             />
           </label>
           <label>
-            Numero squadre
+            Partecipanti
             <input
               type="number"
-              min={2}
-              max={20}
               value={config.teams.length}
-              onChange={(e) => dispatch({ type: 'setTeamCount', count: Number(e.target.value) || 2 })}
+              readOnly
+              disabled
+              title="Il numero di partecipanti si fissa alla creazione dell'asta"
             />
           </label>
         </div>
@@ -143,6 +143,11 @@ export function SetupScreen({ onDone }: { onDone: () => void }) {
             ))}
           </div>
         )}
+        <p className="muted small">
+          Il numero di partecipanti è fissato alla creazione e non si cambia: le squadre esistono anche
+          nella sessione live, e spostarne il conteggio a metà strada scombinerebbe rose e crediti. Per un
+          numero diverso crea una nuova asta con <b>＋ Nuova asta</b>.
+        </p>
       </section>
 
       <section className="card">

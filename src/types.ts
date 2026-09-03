@@ -50,6 +50,10 @@ export const PRIORITY_LABEL: Record<number, string> = {
 
 export const PRIORITY_SHORT: Record<number, string> = { 1: 'P1', 2: 'P2', 3: 'Low', 4: 'S' }
 
+/** Estremi consentiti per il numero di partecipanti a un'asta */
+export const MIN_PARTECIPANTI = 2
+export const MAX_PARTECIPANTI = 10
+
 export type Mode = 'mantra' | 'classic'
 
 export interface LeagueConfig {

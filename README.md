@@ -37,10 +37,17 @@ L'app tiene più aste salvate insieme: ognuna ha le sue regole, il suo listone, 
 suoi acquisti. Si passa dall'una all'altra dal selettore in alto a sinistra, e si gestiscono tutte
 dalla card **Aste salvate** nel setup (rinomina, duplica, elimina).
 
-Il pulsante **＋** apre la creazione di una nuova asta: il nome è libero e la modalità è già
-impostata su quella opposta a quella corrente, che è il caso tipico (finito il Mantra, si prepara il
-Classic). Si sceglie cosa riportare dall'asta corrente — squadre e budget, listone importato,
-obiettivi — mentre gli acquisti non vengono mai riportati: la nuova asta parte da zero.
+Il pulsante **＋** apre la creazione di una nuova asta: nome libero, **numero di partecipanti da 2 a
+10** e modalità già impostata su quella opposta a quella corrente, che è il caso tipico (finito il
+Mantra, si prepara il Classic). Si sceglie cosa riportare dall'asta corrente — squadre e budget,
+listone importato, obiettivi — mentre gli acquisti non vengono mai riportati: la nuova asta parte da
+zero.
+
+Il **numero di partecipanti si fissa alla creazione e non cambia più**. I nomi delle squadre restano
+invece modificabili in qualsiasi momento. Il vincolo non è capriccioso: le squadre esistono anche
+come righe nella sessione live, e l'app le accoppia per posizione — cambiarne il numero a metà strada
+scombinerebbe rose, crediti e collegamenti dei partecipanti. Per un numero diverso si crea una nuova
+asta.
 
 ## Dove finiscono i dati
 

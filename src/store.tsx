@@ -6,6 +6,7 @@ import type {
   AppState,
   Auction,
   ClassicRole,
+  FantaTeam,
   LeagueConfig,
   Mode,
   Player,
@@ -13,7 +14,7 @@ import type {
   Target,
   Vault,
 } from './types'
-import { CLASSIC_ROLE_ORDER, MODE_LABEL } from './types'
+import { CLASSIC_ROLE_ORDER, MAX_PARTECIPANTI, MIN_PARTECIPANTI, MODE_LABEL } from './types'
 
 const VAULT_KEY = 'asta-fanta-vault-v2'
 /** Chiave della versione a singola asta: letta una volta per migrare, mai riscritta. */
@@ -23,11 +24,7 @@ export function defaultConfig(): LeagueConfig {
   return {
     mode: 'mantra',
     budget: 4000,
-    teams: Array.from({ length: 8 }, (_, i) => ({
-      id: `t${i + 1}`,
-      name: i === 0 ? 'La mia squadra' : `Squadra ${i + 1}`,
-      isMine: i === 0,
-    })),
+    teams: squadrePer(8),
     classicSlots: { P: 6, D: 8, C: 9, A: 6 },
     mantraGk: 6,
     mantraOutfield: 29,
@@ -39,6 +36,20 @@ export function defaultConfig(): LeagueConfig {
     attesaSecondi: 5,
     intervalloSecondi: 3,
   }
+}
+
+/**
+ * Costruisce l'elenco delle squadre per una nuova asta, conservando i nomi
+ * di quelle esistenti quando se ne riporta la configurazione.
+ */
+function squadrePer(count: number, esistenti?: FantaTeam[]): FantaTeam[] {
+  const n = Math.max(MIN_PARTECIPANTI, Math.min(MAX_PARTECIPANTI, Math.round(count)))
+  const teams = Array.from({ length: n }, (_, i) => ({
+    id: `t${i + 1}`,
+    name: esistenti?.[i]?.name ?? (i === 0 ? 'La mia squadra' : `Squadra ${i + 1}`),
+    isMine: i === 0,
+  }))
+  return teams
 }
 
 function newId(): string {
@@ -111,7 +122,6 @@ export type Action =
   | { type: 'importPlayers'; players: Player[]; fileName: string }
   | { type: 'setConfig'; patch: Partial<LeagueConfig> }
   | { type: 'renameTeam'; teamId: string; name: string }
-  | { type: 'setTeamCount'; count: number }
   | { type: 'purchase'; playerId: number; teamId: string; price: number }
   | { type: 'removePurchase'; playerId: number }
   | { type: 'undoLastPurchase' }
@@ -128,6 +138,8 @@ export type Action =
       type: 'createAuction'
       name: string
       mode: Mode
+      /** Fissato alla creazione: dopo non si cambia più */
+      teamCount: number
       copyConfig: boolean
       copyListone: boolean
       copyTargets: boolean
@@ -164,21 +176,6 @@ function appReducer(state: AppState, action: Action): AppState {
           teams: state.config.teams.map((t) => (t.id === action.teamId ? { ...t, name: action.name } : t)),
         },
       }
-    case 'setTeamCount': {
-      const count = Math.max(2, Math.min(20, action.count))
-      const teams = [...state.config.teams]
-      while (teams.length < count) {
-        teams.push({ id: `t${teams.length + 1}`, name: `Squadra ${teams.length + 1}`, isMine: false })
-      }
-      const kept = teams.slice(0, count)
-      if (!kept.some((t) => t.isMine)) kept[0] = { ...kept[0], isMine: true }
-      const keptIds = new Set(kept.map((t) => t.id))
-      return {
-        ...state,
-        config: { ...state.config, teams: kept },
-        purchases: state.purchases.filter((p) => keptIds.has(p.teamId)),
-      }
-    }
     case 'purchase': {
       const existing = state.purchases.find((p) => p.playerId === action.playerId)
       const others = state.purchases.filter((p) => p.playerId !== action.playerId)
@@ -254,7 +251,11 @@ function vaultReducer(vault: Vault, action: Action): Vault {
       const copyListone = action.copyListone && !!src
       const config = action.copyConfig && src ? { ...src.state.config } : defaultConfig()
       const state: AppState = {
-        config: { ...config, mode: action.mode },
+        config: {
+          ...config,
+          mode: action.mode,
+          teams: squadrePer(action.teamCount, action.copyConfig ? src?.state.config.teams : undefined),
+        },
         players: copyListone ? src!.state.players : [],
         purchases: [],
         // Gli obiettivi riferiscono gli id del listone: senza listone non hanno appiglio

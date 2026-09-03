@@ -9,7 +9,8 @@ export interface SessioneRow {
   slot_config: { slot?: Record<string, number>; portieri?: number; movimento?: number }
   rilancio_minimo: number
   attesa_secondi: number
-  intervallo_secondi: number
+  secondi_1_2: number
+  secondi_2_3: number
   stato: 'idle' | 'active' | 'paused' | 'closed'
 }
 

@@ -34,7 +34,8 @@ export function defaultConfig(): LeagueConfig {
     callMode: false,
     rilancioMinimo: 1,
     attesaSecondi: 5,
-    intervalloSecondi: 3,
+    secondiDa1A2: 3,
+    secondiDa2A3: 3,
   }
 }
 

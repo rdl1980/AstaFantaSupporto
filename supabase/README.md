@@ -23,6 +23,10 @@ che era già pubblicata.
 **Quando le funzioni cambiano** basta rieseguire `02-functions.sql`: usa
 `create or replace`, quindi rilanciarlo è sempre sicuro e non tocca i dati.
 
+**Su un progetto già avviato** va eseguito anche `04-tempi-separati.sql`, una volta
+sola: separa i due intervalli del conteggio (uno→due e due→tre), che prima erano un
+unico valore. Dopo di esso, rieseguire `02-functions.sql`.
+
 ## 3. Copiare le credenziali
 
 In **Project Settings → API** trovi:

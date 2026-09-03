@@ -23,7 +23,8 @@ export async function creaSessione(args: {
   squadre: string[]
   rilancioMinimo: number
   attesaSecondi: number
-  intervalloSecondi: number
+  secondiDa1A2: number
+  secondiDa2A3: number
 }): Promise<{ sessioneId: string; codice: string; adminToken: string }> {
   const { data, error } = await client().rpc('crea_sessione', {
     p_nome: args.nome,
@@ -33,7 +34,8 @@ export async function creaSessione(args: {
     p_squadre: args.squadre,
     p_rilancio_minimo: args.rilancioMinimo,
     p_attesa_secondi: args.attesaSecondi,
-    p_intervallo_secondi: args.intervalloSecondi,
+    p_secondi_1_2: args.secondiDa1A2,
+    p_secondi_2_3: args.secondiDa2A3,
   })
   if (error) throw new Error(error.message)
   if (!data?.ok) throw new Error(data?.motivo ?? 'creazione fallita')
@@ -151,14 +153,16 @@ export async function aggiornaImpostazioni(args: {
   adminToken: string
   rilancioMinimo: number
   attesaSecondi: number
-  intervalloSecondi: number
+  secondiDa1A2: number
+  secondiDa2A3: number
 }) {
   const { error } = await client().rpc('aggiorna_impostazioni', {
     p_sessione: args.sessioneId,
     p_admin_token: args.adminToken,
     p_rilancio_minimo: args.rilancioMinimo,
     p_attesa_secondi: args.attesaSecondi,
-    p_intervallo_secondi: args.intervalloSecondi,
+    p_secondi_1_2: args.secondiDa1A2,
+    p_secondi_2_3: args.secondiDa2A3,
   })
   if (error) throw new Error(error.message)
 }

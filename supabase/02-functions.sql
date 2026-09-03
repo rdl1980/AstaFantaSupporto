@@ -84,7 +84,7 @@ $$;
 create or replace function crea_sessione(
   p_nome text, p_modalita text, p_budget int, p_slot_config jsonb,
   p_squadre text[], p_rilancio_minimo int default 1,
-  p_attesa_secondi int default 5, p_intervallo_secondi int default 3
+  p_attesa_secondi int default 5, p_secondi_1_2 int default 3, p_secondi_2_3 int default 3
 ) returns jsonb language plpgsql security definer as $$
 declare
   v_id     uuid;
@@ -102,9 +102,9 @@ begin
   end if;
 
   insert into sessione (codice, nome, modalita, budget, slot_config, rilancio_minimo,
-                        attesa_secondi, intervallo_secondi, stato)
+                        attesa_secondi, secondi_1_2, secondi_2_3, stato)
     values (v_codice, p_nome, p_modalita, p_budget, p_slot_config, p_rilancio_minimo,
-            p_attesa_secondi, p_intervallo_secondi, 'active')
+            p_attesa_secondi, p_secondi_1_2, p_secondi_2_3, 'active')
     returning id into v_id;
 
   insert into sessione_segreto (sessione_id, admin_token) values (v_id, v_admin);
@@ -122,7 +122,7 @@ $$;
 
 create or replace function aggiorna_impostazioni(
   p_sessione uuid, p_admin_token text,
-  p_rilancio_minimo int, p_attesa_secondi int, p_intervallo_secondi int
+  p_rilancio_minimo int, p_attesa_secondi int, p_secondi_1_2 int, p_secondi_2_3 int
 ) returns jsonb language plpgsql security definer as $$
 begin
   if not exists (select 1 from sessione_segreto where sessione_id = p_sessione and admin_token = p_admin_token) then
@@ -130,7 +130,8 @@ begin
   end if;
   update sessione set rilancio_minimo = greatest(1, p_rilancio_minimo),
                       attesa_secondi = greatest(0, p_attesa_secondi),
-                      intervallo_secondi = greatest(1, p_intervallo_secondi)
+                      secondi_1_2 = greatest(1, p_secondi_1_2),
+                      secondi_2_3 = greatest(1, p_secondi_2_3)
     where id = p_sessione;
   return jsonb_build_object('ok', true);
 end
@@ -212,7 +213,7 @@ begin
     ruolo_classic = p_ruolo, ruoli_mantra = p_ruoli_mantra,
     offerta_attuale = nullif(p_base, 0), miglior_offerente_id = null,
     stato = 'active',
-    scadenza = now() + make_interval(secs => s.attesa_secondi + 3 * s.intervallo_secondi),
+    scadenza = now() + make_interval(secs => s.attesa_secondi + s.secondi_1_2 + 2 * s.secondi_2_3),
     versione = versione + 1
   where sessione_id = p_sessione;
 
@@ -298,7 +299,7 @@ begin
     offerta_attuale = p_offerta,
     miglior_offerente_id = p_squadra,
     -- ogni rilancio fa ripartire l'attesa prima del conteggio
-    scadenza = now() + make_interval(secs => s.attesa_secondi + 3 * s.intervallo_secondi),
+    scadenza = now() + make_interval(secs => s.attesa_secondi + s.secondi_1_2 + 2 * s.secondi_2_3),
     versione = versione + 1
   where sessione_id = p_sessione;
 

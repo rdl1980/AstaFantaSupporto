@@ -13,8 +13,10 @@ create table if not exists sessione (
   rilancio_minimo    int  not null default 1 check (rilancio_minimo >= 1),
   -- secondi dall'ultima offerta all'inizio del conteggio
   attesa_secondi     int  not null default 5 check (attesa_secondi >= 0),
-  -- secondi fra un numero e il successivo (1→2, 2→3, 3→aggiudicato)
-  intervallo_secondi int  not null default 3 check (intervallo_secondi >= 1),
+  -- secondi fra "uno" e "due"
+  secondi_1_2        int  not null default 3 check (secondi_1_2 >= 1),
+  -- secondi fra "due" e "tre", e fra "tre" e l'aggiudicazione
+  secondi_2_3        int  not null default 3 check (secondi_2_3 >= 1),
   stato              text not null default 'idle'
                      check (stato in ('idle', 'active', 'paused', 'closed')),
   creata_il          timestamptz not null default now()

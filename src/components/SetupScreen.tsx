@@ -180,13 +180,24 @@ export function SetupScreen({ onDone }: { onDone: () => void }) {
             />
           </label>
           <label>
-            Secondi fra uno, due e tre
+            Secondi da uno a due
             <input
               type="number"
               min={1}
-              value={config.intervalloSecondi}
+              value={config.secondiDa1A2}
               onChange={(e) =>
-                dispatch({ type: 'setConfig', patch: { intervalloSecondi: Math.max(1, Number(e.target.value) || 1) } })
+                dispatch({ type: 'setConfig', patch: { secondiDa1A2: Math.max(1, Number(e.target.value) || 1) } })
+              }
+            />
+          </label>
+          <label>
+            Secondi da due a tre
+            <input
+              type="number"
+              min={1}
+              value={config.secondiDa2A3}
+              onChange={(e) =>
+                dispatch({ type: 'setConfig', patch: { secondiDa2A3: Math.max(1, Number(e.target.value) || 1) } })
               }
             />
           </label>
@@ -196,11 +207,13 @@ export function SetupScreen({ onDone }: { onDone: () => void }) {
           <b>
             {durataTotale({
               attesaSecondi: config.attesaSecondi,
-              intervalloSecondi: config.intervalloSecondi,
+              secondiDa1A2: config.secondiDa1A2,
+              secondiDa2A3: config.secondiDa2A3,
             })}
             s
           </b>
-          .
+          : il &ldquo;tre&rdquo; resta in vista per gli stessi secondi dell&apos;intervallo due→tre, poi il
+          giocatore è aggiudicato e l&apos;esito resta a schermo per 3 secondi.
         </p>
       </section>
 

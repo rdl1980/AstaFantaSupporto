@@ -78,8 +78,10 @@ export interface LeagueConfig {
   rilancioMinimo: number
   /** Secondi dall'ultima offerta all'inizio del conteggio */
   attesaSecondi: number
-  /** Secondi fra un numero e il successivo del conteggio */
-  intervalloSecondi: number
+  /** Secondi fra "uno" e "due" */
+  secondiDa1A2: number
+  /** Secondi fra "due" e "tre", e fra "tre" e l'aggiudicazione */
+  secondiDa2A3: number
 }
 
 export interface AppState {

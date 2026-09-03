@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { liveDisponibile, oraServer, sincronizzaOrologio } from './client'
 import { conteggio, etichetta } from './countdown'
+import { useEsitoRecente } from './esito'
 import { slotRuoloPieno, statoSquadra } from './derive'
 import { aggiudicaSeScaduta, rilancia, rivendicaSquadra, trovaSessione, useLive } from './session'
 import type { CredenzialiPartecipante, EsitoRilancio, SessioneRow } from './types'
@@ -154,6 +155,7 @@ function Terminale({
 
   const chiamata = live.chiamata
   const attiva = chiamata?.stato === 'active' && !!chiamata.scadenza
+  const esitoChiamata = useEsitoRecente(live.chiamata)
   useTick(attiva)
 
   const mia = useMemo(
@@ -167,7 +169,8 @@ function Terminale({
   const c = attiva
     ? conteggio(new Date(chiamata!.scadenza!).getTime(), oraServer(), {
         attesaSecondi: sessione.attesa_secondi,
-        intervalloSecondi: sessione.intervallo_secondi,
+        secondiDa1A2: sessione.secondi_1_2,
+        secondiDa2A3: sessione.secondi_2_3,
       })
     : null
 
@@ -244,7 +247,18 @@ function Terminale({
         </div>
       </div>
 
-      {!attiva ? (
+      {!attiva && esitoChiamata ? (
+        <div className="pt-chiamata pt-esito">
+          <div className="pt-giocatore">{esitoChiamata.giocatore}</div>
+          <div className="pt-conteggio fase-scaduta">AGGIUDICATO</div>
+          <div className="pt-offerta">
+            <b className="pt-num-grande">{esitoChiamata.prezzo}</b>
+            <span className="muted">
+              a {live.squadre.find((s) => s.id === esitoChiamata.squadraId)?.nome ?? '?'}
+            </span>
+          </div>
+        </div>
+      ) : !attiva ? (
         <div className="pt-attesa muted">
           <p>Nessun giocatore in asta.</p>
           <p className="small">Appena il banditore ne chiama uno lo vedrai qui.</p>

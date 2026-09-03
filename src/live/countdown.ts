@@ -6,15 +6,20 @@
  *
  * Linea del tempo dopo l'ultima offerta:
  *
- *   |<-- attesaSecondi -->|<- int ->|<- int ->|<- int ->|
- *   offerta            "uno"     "due"     "tre"    aggiudicato
+ *   |<--- attesa --->|<- da1a2 ->|<- da2a3 ->|<- da2a3 ->|
+ *   offerta        "uno"       "due"       "tre"     aggiudicato
+ *
+ * Il "tre" resta in vista quanto l'intervallo fra il due e il tre: e' il battito
+ * che nell'asta vera separa l'ultimo numero dal colpo di martello.
  */
 
 export interface TimerConfig {
   /** Secondi dall'ultima offerta all'inizio del conteggio */
   attesaSecondi: number
-  /** Secondi fra un numero e il successivo */
-  intervalloSecondi: number
+  /** Secondi fra "uno" e "due" */
+  secondiDa1A2: number
+  /** Secondi fra "due" e "tre", e fra "tre" e l'aggiudicazione */
+  secondiDa2A3: number
 }
 
 export type Conteggio =
@@ -24,7 +29,7 @@ export type Conteggio =
 
 /** Durata totale di una chiamata senza rilanci, in secondi. */
 export function durataTotale(cfg: TimerConfig): number {
-  return cfg.attesaSecondi + 3 * cfg.intervalloSecondi
+  return cfg.attesaSecondi + cfg.secondiDa1A2 + 2 * cfg.secondiDa2A3
 }
 
 /**
@@ -35,15 +40,17 @@ export function conteggio(scadenzaMs: number, oraMs: number, cfg: TimerConfig): 
   const rimanenti = (scadenzaMs - oraMs) / 1000
   if (rimanenti <= 0) return { fase: 'scaduta', rimanenti: 0 }
 
-  const i = Math.max(1, cfg.intervalloSecondi)
-  if (rimanenti > 3 * i) {
-    return { fase: 'attesa', rimanenti, alConteggio: rimanenti - 3 * i }
+  const a = Math.max(1, cfg.secondiDa1A2)
+  const b = Math.max(1, cfg.secondiDa2A3)
+
+  if (rimanenti > a + 2 * b) {
+    return { fase: 'attesa', rimanenti, alConteggio: rimanenti - (a + 2 * b) }
   }
-  if (rimanenti > 2 * i) {
-    return { fase: 'conteggio', numero: 1, rimanenti, alProssimo: rimanenti - 2 * i }
+  if (rimanenti > 2 * b) {
+    return { fase: 'conteggio', numero: 1, rimanenti, alProssimo: rimanenti - 2 * b }
   }
-  if (rimanenti > i) {
-    return { fase: 'conteggio', numero: 2, rimanenti, alProssimo: rimanenti - i }
+  if (rimanenti > b) {
+    return { fase: 'conteggio', numero: 2, rimanenti, alProssimo: rimanenti - b }
   }
   return { fase: 'conteggio', numero: 3, rimanenti, alProssimo: rimanenti }
 }

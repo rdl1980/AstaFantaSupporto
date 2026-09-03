@@ -167,7 +167,13 @@ tre*, e alla fine il giocatore è aggiudicato. Ogni rilancio fa ripartire tutto 
 configurano i due tempi:
 
 - **attesa prima del conteggio** — i secondi che passano dall'offerta all'inizio del conteggio;
-- **secondi fra uno, due e tre** — la cadenza dei tre numeri.
+- **secondi da uno a due** e **secondi da due a tre** — la cadenza dei numeri, regolabile
+  separatamente per i due intervalli.
+
+Il &ldquo;tre&rdquo; resta in vista per gli stessi secondi dell'intervallo due→tre, che è il battito
+che nell'asta vera separa l'ultimo numero dal colpo di martello. Subito dopo l'aggiudicazione, il
+giocatore e la squadra che se l'è preso restano a schermo per tre secondi: il server ha già chiuso
+tutto, l'attesa è solo di facciata perché si faccia in tempo a leggere com'è andata.
 
 Il conteggio non viaggia sulla rete: il server trasmette solo l'istante di scadenza, e ogni
 dispositivo ricava da sé la fase in cui si trova. Così tutti vedono lo stesso numero senza un flusso

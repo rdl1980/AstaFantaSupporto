@@ -3,6 +3,7 @@ import { totalSlots, useStore } from '../store'
 import type { Player } from '../types'
 import { liveDisponibile, oraServer } from './client'
 import { conteggio, durataTotale, etichetta } from './countdown'
+import { useEsitoRecente } from './esito'
 import {
   aggiornaImpostazioni,
   annullaChiamata,
@@ -54,8 +55,10 @@ export function LiveAdminPanel({
 
   const timer = {
     attesaSecondi: live.sessione?.attesa_secondi ?? config.attesaSecondi,
-    intervalloSecondi: live.sessione?.intervallo_secondi ?? config.intervalloSecondi,
+    secondiDa1A2: live.sessione?.secondi_1_2 ?? config.secondiDa1A2,
+    secondiDa2A3: live.sessione?.secondi_2_3 ?? config.secondiDa2A3,
   }
+  const esito = useEsitoRecente(live.chiamata)
   const c = attiva
     ? conteggio(new Date(chiamata!.scadenza!).getTime(), oraServer(), timer)
     : null
@@ -106,7 +109,8 @@ export function LiveAdminPanel({
         squadre: config.teams.map((t) => t.name),
         rilancioMinimo: config.rilancioMinimo,
         attesaSecondi: config.attesaSecondi,
-        intervalloSecondi: config.intervalloSecondi,
+        secondiDa1A2: config.secondiDa1A2,
+        secondiDa2A3: config.secondiDa2A3,
       })
       setCred({ codice: r.codice, sessioneId: r.sessioneId, adminToken: r.adminToken })
       setApri(true)
@@ -189,6 +193,12 @@ export function LiveAdminPanel({
             Annulla
           </button>
         </>
+      ) : esito ? (
+        <span className="live-esito">
+          🔨 <b>{esito.giocatore}</b> a{' '}
+          <b>{live.squadre.find((s) => s.id === esito.squadraId)?.nome ?? '?'}</b> per{' '}
+          <b>{esito.prezzo}</b>
+        </span>
       ) : (
         <div className="live-chiama">
           <input
@@ -244,8 +254,9 @@ export function LiveAdminPanel({
             Link per i partecipanti: <code>{linkPartecipanti}</code>
           </p>
           <p className="muted small">
-            Durata di una chiamata senza rilanci: <b>{durataTotale(timer)}s</b> ({timer.attesaSecondi}s di
-            attesa, poi {timer.intervalloSecondi}s per ogni numero). Si cambia dal Setup.
+            Durata di una chiamata senza rilanci: <b>{durataTotale(timer)}s</b> — {timer.attesaSecondi}s di
+            attesa, {timer.secondiDa1A2}s dall&apos;uno al due, {timer.secondiDa2A3}s dal due al tre e
+            altrettanti prima dell&apos;aggiudicazione. Si cambia dal Setup.
           </p>
           <div className="live-azioni-extra">
             <button
@@ -256,7 +267,8 @@ export function LiveAdminPanel({
                   adminToken: cred.adminToken,
                   rilancioMinimo: config.rilancioMinimo,
                   attesaSecondi: config.attesaSecondi,
-                  intervalloSecondi: config.intervalloSecondi,
+                  secondiDa1A2: config.secondiDa1A2,
+                  secondiDa2A3: config.secondiDa2A3,
                 }).catch((e) => setErrore(String(e.message)))
               }
             >

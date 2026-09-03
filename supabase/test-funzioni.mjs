@@ -41,7 +41,8 @@ const sess = await rpc('crea_sessione', {
   p_squadre: ['Real Sconcerto', 'Bayern Monaco', 'Athletic Bilbaolo'],
   p_rilancio_minimo: 1,
   p_attesa_secondi: 5,
-  p_intervallo_secondi: 3,
+  p_secondi_1_2: 3,
+  p_secondi_2_3: 4,
 })
 verifica('sessione creata', sess.ok)
 verifica('codice stanza di 6 caratteri', /^[0-9A-F]{6}$/.test(sess.codice), sess.codice)
@@ -147,7 +148,7 @@ const sm = await rpc('crea_sessione', {
   p_nome: 'Mantra di prova', p_modalita: 'mantra', p_budget: 4000,
   p_slot_config: JSON.stringify({ portieri: 2, movimento: 3 }),
   p_squadre: ['Uno', 'Due'], p_rilancio_minimo: 1,
-  p_attesa_secondi: 5, p_intervallo_secondi: 3,
+  p_attesa_secondi: 5, p_secondi_1_2: 3, p_secondi_2_3: 4,
 })
 const msid = sm.sessione_id
 const msq = (await db.query('select id from squadra where sessione_id=$1 order by ordine', [msid])).rows
@@ -185,6 +186,19 @@ verifica('pubblica_assegnazione con token sbagliato rifiutata',
   })).motivo === 'non_autorizzato')
 verifica('giocatore gia assegnato non puo tornare in asta',
   (await rpc('metti_all_asta', { ...inAsta, p_giocatore_id: 100 })).motivo === 'gia_assegnato')
+
+// ------------------------------------------------- i due intervalli del conteggio --
+console.log(`
+== Durata della chiamata con intervalli distinti ==`)
+await rpc('annulla_chiamata', { p_sessione: sid, p_admin_token: admin })
+await rpc('metti_all_asta', { ...inAsta, p_giocatore_id: 900, p_nome: 'Cadenza', p_ruolo: 'C' })
+const durata = await call(
+  'select extract(epoch from (scadenza - now())) as s from chiamata where sessione_id=$1',
+  [sid],
+)
+// attesa 5 + (1→2) 3 + due volte (2→3) 4 = 16 secondi
+verifica('la scadenza somma attesa, 1→2 e due volte 2→3', Math.abs(Number(durata.s) - 16) < 1, String(durata.s))
+await rpc('annulla_chiamata', { p_sessione: sid, p_admin_token: admin })
 
 // ------------------------------------------- chiusura di una chiamata scaduta --
 console.log(`

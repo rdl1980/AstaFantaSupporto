@@ -1260,3 +1260,11 @@ td.status { font-size: 12px; white-space: nowrap; }
 }
 
 .live-suggeriti .btn { font-size: 12px; padding: 3px 8px; }
+
+.live-esito {
+  font-weight: 600;
+  color: var(--green);
+  white-space: nowrap;
+}
+
+.pt-esito { border-color: var(--green); }

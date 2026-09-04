@@ -1,10 +1,15 @@
 :root {
-  --bg: #0f1420;
-  --bg2: #171e2e;
-  --bg3: #1f2840;
-  --border: #2c3854;
-  --text: #e8ecf5;
-  --muted: #8b96ad;
+  /* Superfici, dalla più profonda alla più in rilievo. Averle come scala, e non
+     come colori sparsi, è ciò che fa leggere la gerarchia a colpo d'occhio. */
+  --bg: #0d1220;
+  --bg2: #151c2b;
+  --bg3: #1d2537;
+  --bg-hi: #26314a;
+  --border: #2b3650;
+  --border-soft: #202a3c;
+
+  --text: #e9edf7;
+  --muted: #8994ac;
   --accent: #4f8ef7;
   --accent2: #2f6fdc;
   --gold: #f5c542;
@@ -12,7 +17,15 @@
   --red: #e15b64;
   --warn: #f0a04b;
 
-  font-family: 'Segoe UI', system-ui, sans-serif;
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.35);
+  --shadow: 0 2px 10px rgba(0, 0, 0, 0.35);
+  --shadow-lg: 0 10px 32px rgba(0, 0, 0, 0.45);
+
+  --r-sm: 6px;
+  --r: 10px;
+  --r-lg: 14px;
+
+  font-family: system-ui, 'Segoe UI', Roboto, sans-serif;
   color-scheme: dark;
 }
 
@@ -25,6 +38,10 @@ body {
   background: var(--bg);
   color: var(--text);
   font-size: 14px;
+  -webkit-font-smoothing: antialiased;
+  /* Cifre a larghezza fissa: le colonne di prezzi si incolonnano davvero e un
+     numero che cambia non fa ballare quello che ha accanto. */
+  font-variant-numeric: tabular-nums;
 }
 
 #root {
@@ -35,7 +52,10 @@ body {
 
 h1, h2, h3, h4 {
   margin: 0 0 8px;
+  letter-spacing: -0.01em;
 }
+
+h1 { letter-spacing: -0.02em; }
 
 .muted { color: var(--muted); }
 .small { font-size: 12px; }
@@ -56,9 +76,12 @@ input, select, button {
 input, select {
   background: var(--bg3);
   border: 1px solid var(--border);
-  border-radius: 6px;
+  border-radius: var(--r-sm);
   padding: 6px 8px;
+  transition: border-color 0.12s ease, background 0.12s ease;
 }
+
+input:hover:not(:disabled), select:hover:not(:disabled) { border-color: #3a4767; }
 
 input:focus, select:focus {
   outline: 2px solid var(--accent2);
@@ -68,13 +91,16 @@ input:focus, select:focus {
 .btn {
   background: var(--bg3);
   border: 1px solid var(--border);
-  border-radius: 6px;
+  border-radius: var(--r-sm);
   padding: 6px 12px;
   cursor: pointer;
   white-space: nowrap;
+  transition: background 0.12s ease, border-color 0.12s ease, transform 0.06s ease;
 }
 
-.btn:hover:not(:disabled) { border-color: var(--accent); }
+.btn:hover:not(:disabled) { border-color: var(--accent); background: var(--bg-hi); }
+.btn:active:not(:disabled) { transform: translateY(1px); }
+.btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 .btn:disabled { opacity: 0.45; cursor: default; }
 .btn.primary { background: var(--accent2); border-color: var(--accent2); }
 .btn.primary:hover:not(:disabled) { background: var(--accent); }
@@ -121,11 +147,12 @@ input:focus, select:focus {
 }
 
 .card {
-  background: var(--bg2);
+  background: linear-gradient(180deg, #172032 0%, var(--bg2) 60%);
   border: 1px solid var(--border);
-  border-radius: 10px;
+  border-radius: var(--r-lg);
   padding: 16px 20px;
   margin: 14px 0;
+  box-shadow: var(--shadow);
 }
 
 .form-row {
@@ -169,8 +196,13 @@ input:focus, select:focus {
   align-items: center;
   gap: 12px;
   padding: 8px 14px;
-  background: var(--bg2);
+  /* La barra principale sta *sopra* il contenuto: un filo di luce in cima e
+     un'ombra sotto bastano a dirlo senza aggiungere linee. */
+  background: linear-gradient(180deg, #1a2334 0%, var(--bg2) 100%);
   border-bottom: 1px solid var(--border);
+  box-shadow: var(--shadow);
+  position: relative;
+  z-index: 3;
   flex-wrap: wrap;
 }
 
@@ -183,7 +215,15 @@ input:focus, select:focus {
 .topbar-right { gap: 8px; }
 
 .stat { display: flex; align-items: baseline; gap: 5px; }
-.big-num { font-size: 20px; color: var(--gold); }
+
+/* Il numero che conta davvero: più grande, più pesante, e con le cifre
+   leggermente ravvicinate perché si legga come una cifra sola. */
+.big-num {
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--gold);
+}
 
 .columns {
   display: flex;
@@ -220,8 +260,9 @@ input:focus, select:focus {
   padding: 8px;
   flex-wrap: wrap;
   align-items: center;
-  background: var(--bg2);
-  border-bottom: 1px solid var(--border);
+  /* I filtri sono contorno, non contenuto: restano indietro */
+  background: rgba(21, 28, 43, 0.6);
+  border-bottom: 1px solid var(--border-soft);
 }
 
 .listone-filters .search { flex: 1; min-width: 180px; }
@@ -251,22 +292,29 @@ th {
   top: 0;
   background: var(--bg2);
   text-align: left;
-  padding: 6px 8px;
-  font-size: 12px;
+  padding: 7px 8px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
   color: var(--muted);
   border-bottom: 1px solid var(--border);
+  box-shadow: 0 1px 0 rgba(0, 0, 0, 0.25);
   z-index: 1;
 }
 
 td {
-  padding: 4px 8px;
-  border-bottom: 1px solid #202942;
+  padding: 5px 8px;
+  border-bottom: 1px solid var(--border-soft);
 }
 
 .num { text-align: right; }
 
-tbody tr { cursor: pointer; }
-tbody tr:hover { background: var(--bg3); }
+tbody tr { cursor: pointer; transition: background 0.1s ease; }
+/* Righe alternate appena accennate: bastano a guidare l'occhio lungo la riga
+   senza trasformare la tabella in una zebra. */
+tbody tr:nth-child(even) { background: rgba(255, 255, 255, 0.016); }
+tbody tr:hover { background: var(--bg-hi); }
 
 tr.sold { opacity: 0.42; }
 tr.sold .name { text-decoration: line-through; }
@@ -313,7 +361,7 @@ td.status { font-size: 12px; white-space: nowrap; }
   flex-wrap: wrap;
   background: var(--bg2);
   border: 1px solid var(--border);
-  border-radius: 8px;
+  border-radius: var(--r);
   padding: 10px 14px;
   margin-bottom: 12px;
 }
@@ -329,7 +377,7 @@ td.status { font-size: 12px; white-space: nowrap; }
 .roster-group {
   background: var(--bg2);
   border: 1px solid var(--border);
-  border-radius: 8px;
+  border-radius: var(--r);
   padding: 8px 10px;
 }
 
@@ -360,7 +408,7 @@ td.status { font-size: 12px; white-space: nowrap; }
 .team-card {
   background: var(--bg2);
   border: 1px solid var(--border);
-  border-radius: 8px;
+  border-radius: var(--r);
   padding: 8px 10px;
 }
 
@@ -500,7 +548,7 @@ td.status { font-size: 12px; white-space: nowrap; }
 .import-box {
   background: var(--bg2);
   border: 1px solid var(--border);
-  border-radius: 8px;
+  border-radius: var(--r);
   padding: 10px 12px;
   margin-bottom: 10px;
 }
@@ -562,7 +610,7 @@ td.status { font-size: 12px; white-space: nowrap; }
 .split-box {
   background: var(--bg2);
   border: 1px solid var(--border);
-  border-radius: 8px;
+  border-radius: var(--r);
   padding: 10px 12px;
   margin-bottom: 10px;
 }
@@ -649,7 +697,7 @@ td.status { font-size: 12px; white-space: nowrap; }
   background: var(--bg2);
   border: 1px solid var(--border);
   border-left: 3px solid var(--warn);
-  border-radius: 8px;
+  border-radius: var(--r);
   padding: 8px 10px;
 }
 
@@ -695,7 +743,7 @@ td.status { font-size: 12px; white-space: nowrap; }
   margin-top: 10px;
   background: var(--bg2);
   border: 1px solid var(--border);
-  border-radius: 8px;
+  border-radius: var(--r);
   padding: 8px 10px;
 }
 
@@ -989,7 +1037,7 @@ td.status { font-size: 12px; white-space: nowrap; }
 .club-chip {
   background: var(--bg3);
   border: 1px solid var(--border);
-  border-radius: 8px;
+  border-radius: var(--r);
   padding: 6px 9px;
 }
 
@@ -1081,9 +1129,12 @@ td.status { font-size: 12px; white-space: nowrap; }
   align-items: center;
   gap: 10px;
   flex-wrap: wrap;
-  padding: 6px 14px;
-  background: #14243a;
+  padding: 7px 14px;
+  background: linear-gradient(180deg, #16283f 0%, #132133 100%);
   border-bottom: 1px solid var(--border);
+  box-shadow: var(--shadow-sm);
+  position: relative;
+  z-index: 2;
   font-size: 13px;
 }
 
@@ -1277,3 +1328,184 @@ td.status { font-size: 12px; white-space: nowrap; }
 }
 
 .live-aggiudicato { color: var(--green); font-size: 13px; }
+
+/* ============================================================== rifiniture ==
+   Il conteggio è il momento che conta: qui prende lo spazio e il movimento che
+   merita. Tutto il resto della schermata resta fermo. */
+
+@keyframes battito {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.06); }
+}
+
+@keyframes martello {
+  0% { transform: scale(0.85); opacity: 0; }
+  60% { transform: scale(1.04); opacity: 1; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+@keyframes entra {
+  from { opacity: 0; transform: translateY(-4px); }
+  to { opacity: 1; transform: none; }
+}
+
+.live-conteggio {
+  font-weight: 800;
+  font-size: 18px;
+  letter-spacing: 0.02em;
+  min-width: 72px;
+  text-align: center;
+}
+
+.live-conteggio.fase-conteggio { animation: battito 1s ease-in-out infinite; }
+.live-conteggio.fase-scaduta { animation: martello 0.35s ease-out; }
+.live-chiamata { animation: entra 0.2s ease-out; }
+.live-esito { animation: martello 0.35s ease-out; }
+
+/* --- terminale del partecipante: è la schermata che vedono gli altri --- */
+.pt-giocatore {
+  font-size: 30px;
+  letter-spacing: -0.02em;
+}
+
+.pt-chiamata {
+  animation: entra 0.25s ease-out;
+  box-shadow: var(--shadow-lg);
+}
+
+.pt-conteggio {
+  font-size: 52px;
+  line-height: 1.05;
+  min-height: 58px;
+}
+
+.pt-conteggio.fase-attesa { font-size: 32px; }
+.pt-conteggio.fase-conteggio { animation: battito 1s ease-in-out infinite; }
+.pt-conteggio.fase-scaduta { animation: martello 0.4s ease-out; }
+
+.pt-esito { border-color: var(--green); box-shadow: 0 0 0 1px var(--green), var(--shadow-lg); }
+
+.pt-crediti {
+  background: linear-gradient(180deg, #172032 0%, var(--bg2) 100%);
+  box-shadow: var(--shadow-sm);
+}
+
+.pt-piu {
+  background: linear-gradient(180deg, var(--accent) 0%, var(--accent2) 100%);
+  box-shadow: var(--shadow);
+  transition: transform 0.06s ease, filter 0.12s ease;
+}
+
+.pt-piu:not(:disabled):hover { filter: brightness(1.08); }
+.pt-piu:not(:disabled):active { transform: translateY(2px); }
+
+.pt-squadra {
+  transition: border-color 0.12s ease, background 0.12s ease;
+}
+
+.pt-squadra:not(:disabled):hover { border-color: var(--accent); background: var(--bg-hi); }
+
+/* --- intestazione della schermata di setup --- */
+.setup h1 {
+  font-size: 26px;
+  margin-bottom: 18px;
+}
+
+/* --- badge: un filo di rilievo, restano leggibili in mezzo al testo --- */
+.badge { box-shadow: var(--shadow-sm); }
+
+/* Chi non vuole animazioni non le ha: il conteggio resta comunque leggibile,
+   cambia solo il numero. */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+}
+
+/* --- i numeri della testata come quadro strumenti ---------------------------
+   Erano testo in mezzo ad altro testo: durante un'asta il residuo e l'offerta
+   massima devono trovarsi senza cercarli. */
+.topbar-left { gap: 10px; }
+
+.topbar-left .stat {
+  background: rgba(255, 255, 255, 0.035);
+  border: 1px solid var(--border-soft);
+  border-radius: var(--r-sm);
+  padding: 3px 10px 4px;
+  gap: 6px;
+}
+
+.topbar-left .stat > .muted:first-child {
+  font-size: 11px;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+
+.topbar-left .stat b { font-weight: 700; }
+
+/* --- schede laterali: quella attiva è una superficie, non solo una riga --- */
+.tabs button {
+  transition: color 0.12s ease, background 0.12s ease;
+}
+
+.tabs button:hover { color: var(--text); background: rgba(255, 255, 255, 0.03); }
+
+.tabs button.active {
+  background: linear-gradient(180deg, rgba(79, 142, 247, 0.12) 0%, transparent 100%);
+}
+
+/* --- riquadri del pannello laterale: un filo di rilievo --- */
+.roster-summary,
+.roster-group,
+.team-card,
+.module-card,
+.split-box,
+.import-box,
+.bench,
+.club-chip {
+  box-shadow: var(--shadow-sm);
+}
+
+.roster-summary {
+  background: linear-gradient(180deg, #172032 0%, var(--bg2) 100%);
+}
+
+.team-card.mine,
+.auctions-list li.active {
+  box-shadow: 0 0 0 1px rgba(245, 197, 66, 0.25), var(--shadow-sm);
+}
+
+/* --- il giocatore già preso: barrato e in secondo piano, ma leggibile --- */
+tr.sold { opacity: 0.5; }
+tr.sold:hover { opacity: 0.75; }
+
+/* --- riga del proprio acquisto: si distingue senza gridare --- */
+tr.won { box-shadow: inset 3px 0 0 var(--green); }
+
+/* Stessa grammatica della testata anche nel report: i numeri stanno dentro un
+   riquadro, le etichette in maiuscoletto sopra. */
+.report-stats { gap: 12px; }
+
+.report-stats .stat {
+  background: rgba(255, 255, 255, 0.035);
+  border: 1px solid var(--border-soft);
+  border-radius: var(--r-sm);
+  padding: 7px 14px 8px;
+  min-width: 96px;
+}
+
+.report-stats .stat > .muted:first-child {
+  font-size: 11px;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+
+.report-title { letter-spacing: -0.01em; }
+
+.titolo-app {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}

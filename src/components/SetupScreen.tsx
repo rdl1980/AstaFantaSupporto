@@ -31,7 +31,19 @@ export function SetupScreen({ onDone }: { onDone: () => void }) {
 
   return (
     <div className="setup">
-      <h1>⚽ Asta Fanta Supporto</h1>
+      <h1 className="titolo-app">
+        {/* Lo stesso martello dell'icona nella scheda: una sola identità */}
+        <svg viewBox="0 0 64 64" width="30" height="30" aria-hidden="true">
+          <rect width="64" height="64" rx="14" fill="var(--bg2)" />
+          <rect x="0.5" y="0.5" width="63" height="63" rx="13.5" fill="none" stroke="var(--border)" />
+          <g transform="rotate(-32 32 30)">
+            <rect x="16" y="18" width="32" height="13" rx="3.5" fill="var(--gold)" />
+            <rect x="30" y="29" width="5" height="21" rx="2.5" fill="#c9962b" />
+          </g>
+          <rect x="17" y="50" width="30" height="5" rx="2.5" fill="var(--accent)" />
+        </svg>
+        Asta Fanta Supporto
+      </h1>
 
       <AuctionsCard />
 

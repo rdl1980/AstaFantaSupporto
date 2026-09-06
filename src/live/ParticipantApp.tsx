@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { liveDisponibile, oraServer, sincronizzaOrologio } from './client'
 import { conteggio, etichetta } from './countdown'
 import { useEsitoRecente } from './esito'
-import { slotRuoloPieno, statoSquadra } from './derive'
+import { repartiLive, slotRuoloPieno, statoSquadra } from './derive'
 import { aggiudicaSeScaduta, rilancia, rivendicaSquadra, trovaSessione, useLive } from './session'
 import type { CredenzialiPartecipante, EsitoRilancio, SessioneRow } from './types'
 import { MOTIVO_LEGGIBILE } from './types'
@@ -151,7 +151,7 @@ function Terminale({
   const [esito, setEsito] = useState<EsitoRilancio | null>(null)
   const [offertaLibera, setOffertaLibera] = useState('')
   const [inviando, setInviando] = useState(false)
-  const [vediTabellone, setVediTabellone] = useState(false)
+  const [vista, setVista] = useState<'asta' | 'rosa' | 'tabellone'>('asta')
 
   const chiamata = live.chiamata
   const attiva = chiamata?.stato === 'active' && !!chiamata.scadenza
@@ -212,8 +212,19 @@ function Terminale({
     }
   }
 
-  if (vediTabellone) {
-    return <Tabellone live={live} sessione={sessione} onIndietro={() => setVediTabellone(false)} />
+  if (vista === 'tabellone') {
+    return <Tabellone live={live} sessione={sessione} onIndietro={() => setVista('asta')} />
+  }
+  if (vista === 'rosa') {
+    return (
+      <MiaRosa
+        live={live}
+        sessione={sessione}
+        squadraId={cred.squadraId}
+        nomeSquadra={nomeSquadra}
+        onIndietro={() => setVista('asta')}
+      />
+    )
   }
 
   return (
@@ -225,9 +236,14 @@ function Terminale({
             {sessione.nome} · {live.connesso ? <span className="ok">in linea</span> : <span className="warn">fuori linea</span>}
           </div>
         </div>
-        <button className="btn ghost small-btn" onClick={() => setVediTabellone(true)}>
-          Tabellone
-        </button>
+        <div className="pt-viste">
+          <button className="btn ghost small-btn" onClick={() => setVista('rosa')}>
+            La mia rosa
+          </button>
+          <button className="btn ghost small-btn" onClick={() => setVista('tabellone')}>
+            Tabellone
+          </button>
+        </div>
       </header>
 
       <div className="pt-crediti">
@@ -334,6 +350,110 @@ function Terminale({
           Cambia squadra su questo dispositivo
         </button>
       </footer>
+    </div>
+  )
+}
+
+// ------------------------------------------------------------ la mia rosa ---
+
+/**
+ * Quello che serve sapere di sé mentre l'asta va avanti: chi si è preso, quanto
+ * manca per reparto e come stanno i crediti. Sono le stesse quantità della
+ * schermata principale, ma qui c'è lo spazio per elencarle.
+ */
+function MiaRosa({
+  live,
+  sessione,
+  squadraId,
+  nomeSquadra,
+  onIndietro,
+}: {
+  live: ReturnType<typeof useLive>
+  sessione: SessioneRow
+  squadraId: string
+  nomeSquadra: string
+  onIndietro: () => void
+}) {
+  const stato = statoSquadra(sessione, live.assegnazioni, squadraId)
+  const reparti = repartiLive(sessione, live.assegnazioni, squadraId)
+  const mie = live.assegnazioni
+    .filter((a) => a.squadra_id === squadraId)
+    .sort((a, b) => b.prezzo - a.prezzo)
+
+  return (
+    <div className="pt">
+      <header className="pt-head">
+        <button className="btn ghost small-btn" onClick={onIndietro}>
+          ← Indietro
+        </button>
+        <div className="pt-titolo">{nomeSquadra}</div>
+      </header>
+
+      <div className="pt-crediti">
+        <div>
+          <span className="muted small">Spesi</span>
+          <b className="pt-num">{stato.spesi}</b>
+        </div>
+        <div>
+          <span className="muted small">Residui</span>
+          <b className="pt-num">{stato.residui}</b>
+        </div>
+        <div>
+          <span className="muted small">Offerta max</span>
+          <b className="pt-num">{stato.maxOfferta}</b>
+        </div>
+      </div>
+
+      <div className="pt-corpo">
+        {reparti.map((r) => {
+          const giocatori = mie.filter((a) =>
+            r.chiave === 'MOV' ? a.ruolo_classic !== 'P' : a.ruolo_classic === r.chiave,
+          )
+          return (
+            <div className="pt-squadra-box" key={r.chiave}>
+              <div className="pt-squadra-head">
+                <b>
+                  <span className={`badge role-${r.chiave === 'MOV' ? 'D' : r.chiave}`}>
+                    {r.chiave === 'MOV' ? 'MOV' : r.chiave}
+                  </span>{' '}
+                  {r.label}
+                </b>
+                <span className="small">
+                  <b>
+                    {r.presi}/{r.totali}
+                  </b>{' '}
+                  {r.mancanti > 0 ? (
+                    <span className="warn">ne mancano {r.mancanti}</span>
+                  ) : (
+                    <span className="ok">completo</span>
+                  )}
+                </span>
+              </div>
+              {giocatori.length === 0 ? (
+                <div className="muted small">nessun acquisto</div>
+              ) : (
+                <ul className="pt-rosa">
+                  {giocatori.map((a) => (
+                    <li key={a.id}>
+                      <span className={`badge role-${sessione.modalita === 'mantra' ? a.ruolo_classic : a.ruolo_classic}`}>
+                        {sessione.modalita === 'mantra' ? (a.ruoli_mantra ?? a.ruolo_classic) : a.ruolo_classic}
+                      </span>
+                      <span className="pt-rosa-nome">
+                        {a.giocatore_nome} <span className="muted small">{a.club}</span>
+                      </span>
+                      <b>{a.prezzo}</b>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          )
+        })}
+
+        <p className="muted small pt-msg">
+          {stato.presi}/{stato.slotTotali} giocatori · {stato.slotRimasti} slot ancora da riempire
+        </p>
+      </div>
     </div>
   )
 }

@@ -1171,6 +1171,10 @@ td.status { font-size: 12px; white-space: nowrap; }
   display: flex;
   flex-direction: column;
   min-height: 100vh;
+  /* `margin: 0 auto` su un elemento flex annulla lo stiramento: senza width il
+     terminale si stringeva al contenuto invece di riempire lo schermo, e le
+     righe con `space-between` finivano appiccicate. */
+  width: 100%;
   max-width: 560px;
   margin: 0 auto;
   padding: 10px 12px 20px;
@@ -1508,4 +1512,13 @@ tr.won { box-shadow: inset 3px 0 0 var(--green); }
   display: flex;
   align-items: center;
   gap: 12px;
+}
+
+.pt-viste { display: flex; gap: 6px; }
+
+/* Intestazione di reparto: su schermi stretti il nome e il conteggio possono
+   andare a capo invece di comprimersi l'uno sull'altro. */
+.pt-squadra-head {
+  gap: 8px;
+  flex-wrap: wrap;
 }

@@ -70,3 +70,51 @@ export function slotRuoloPieno(
   const limite = cfg.slot?.[ruolo] ?? 0
   return mie.filter((a) => a.ruolo_classic === ruolo).length >= limite
 }
+
+export interface RepartoLive {
+  /** Chiave del ruolo Classic, o 'MOV' per il movimento in Mantra */
+  chiave: string
+  label: string
+  presi: number
+  totali: number
+  mancanti: number
+}
+
+/**
+ * Quanti giocatori mancano per completare ogni reparto.
+ *
+ * In Mantra i ruoli di movimento non hanno quote separate: conta solo la
+ * divisione fra portieri e resto della rosa, ed è così che va mostrata.
+ */
+export function repartiLive(
+  s: SessioneRow,
+  assegnazioni: AssegnazioneRow[],
+  squadraId: string,
+): RepartoLive[] {
+  const mie = assegnazioni.filter((a) => a.squadra_id === squadraId)
+  const conta = (f: (a: AssegnazioneRow) => boolean) => mie.filter(f).length
+  const riga = (chiave: string, label: string, presi: number, totali: number): RepartoLive => ({
+    chiave,
+    label,
+    presi,
+    totali,
+    mancanti: Math.max(0, totali - presi),
+  })
+
+  const cfg = s.slot_config ?? {}
+  if (s.modalita === 'mantra') {
+    return [
+      riga('P', 'Portieri', conta((a) => a.ruolo_classic === 'P'), cfg.portieri ?? 0),
+      riga('MOV', 'Movimento', conta((a) => a.ruolo_classic !== 'P'), cfg.movimento ?? 0),
+    ]
+  }
+  const etichette: Record<string, string> = {
+    P: 'Portieri',
+    D: 'Difensori',
+    C: 'Centrocampisti',
+    A: 'Attaccanti',
+  }
+  return (['P', 'D', 'C', 'A'] as const).map((r) =>
+    riga(r, etichette[r], conta((a) => a.ruolo_classic === r), cfg.slot?.[r] ?? 0),
+  )
+}

@@ -160,6 +160,11 @@ Nella schermata d'asta compare **Avvia sessione live**, che genera un codice sta
 quel dispositivo è legato a quella squadra — e si ritrova un terminale con i propri crediti, il
 giocatore in asta, l'offerta corrente e i pulsanti per rilanciare.
 
+Dall'intestazione si arriva a due viste: **La mia rosa**, con i giocatori presi divisi per reparto,
+quanti ne mancano per completarlo, crediti spesi e residui e offerta massima; e **Tabellone**, con
+la situazione di tutte le squadre. Sono le domande che vengono in mente mentre si aspetta la
+chiamata successiva, e adesso hanno una risposta senza chiedere al banditore.
+
 ### I tempi della chiamata
 
 Il conteggio segue la cadenza dell'asta vera: dopo l'ultima offerta si aspetta, poi parte *uno, due,

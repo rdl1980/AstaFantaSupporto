@@ -1555,3 +1555,30 @@ tr.won { box-shadow: inset 3px 0 0 var(--green); }
   gap: 8px;
   flex-wrap: wrap;
 }
+
+/* --------------------------------------------------- asta a sorteggio ---- */
+
+.sorteggio {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.sorteggio-ruoli { display: flex; gap: 4px; }
+
+/* I reparti sono gia' badge colorati: da scegliere basta spegnerli, invece di
+   aggiungere un secondo linguaggio visivo accanto a quello che c'e' gia'. */
+.sorteggio-ruoli .badge {
+  cursor: pointer;
+  border: 1px solid transparent;
+  opacity: 0.45;
+  font-weight: 700;
+}
+
+.sorteggio-ruoli .badge:hover { opacity: 0.75; }
+
+.sorteggio-ruoli .badge.scelto {
+  opacity: 1;
+  border-color: var(--text);
+  box-shadow: var(--shadow-sm);
+}

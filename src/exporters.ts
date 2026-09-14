@@ -1,4 +1,5 @@
 import * as XLSX from 'xlsx'
+import { rosterCsv } from './csvRose'
 import { rosterRows, teamReports } from './report'
 import type { RosterRow } from './report'
 import { teamStats } from './store'
@@ -183,4 +184,11 @@ export function rosterText(
     lines.push('')
   }
   return lines.join('\n').trimEnd()
+}
+
+// ------------------------------------------------- CSV per fantacalcio.it ---
+
+/** Scarica le rose di tutte le squadre nel formato di caricamento del sito. */
+export function exportRosterCsv(state: AppState, auctionName: string): void {
+  download(rosterCsv(state), `${safeFileName(auctionName)}-rose.csv`, 'text/csv;charset=utf-8')
 }

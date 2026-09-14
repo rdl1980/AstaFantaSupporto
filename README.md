@@ -256,14 +256,49 @@ Il pulsante **📊 Report** apre una schermata che legge l'asta e la racconta:
 Gli scostamenti sono calcolati sul prezzo suggerito dall'app: dicono se hai comprato sopra o sotto
 la media della lega, non se hai comprato bene.
 
-Tre export dalla stessa barra:
+Quattro export dalla stessa barra:
 
 - **⬇ Excel rosa** — la tua rosa in `.xlsx`, con prezzo, suggerito, scostamento, quotazione e FVM.
 - **⬇ Excel tabellone** — un foglio di riepilogo, uno con tutti gli acquisti della lega e uno per
   squadra. I nomi dei fogli sono ripuliti dai caratteri che Excel rifiuta e resi unici.
+- **⬇ CSV per fantacalcio.it** — le rose di tutte le squadre nel formato che il sito accetta per il
+  caricamento.
 - **📋 Rosa per chat** — la rosa in testo compatto negli appunti, pronta da incollare.
 
-Sono file Excel veri, scritti con SheetJS, non CSV: si aprono senza domande sul separatore.
+I primi due sono file Excel veri, scritti con SheetJS: si aprono senza domande sul separatore.
+
+### Il CSV per fantacalcio.it
+
+Il formato è una sequenza di blocchi, ognuno aperto dalla riga `$,$,$` e seguito da una riga
+`squadra,idGiocatore,prezzo` per giocatore. Niente intestazione, niente nomi, niente ruoli: l'id è
+quello della colonna `Id` del listone, la stessa da cui l'app importa, quindi le rose costruite qui
+si ricaricano sul sito senza passaggi manuali.
+
+È stato ricavato da un export vero, byte per byte — fine riga `
+`, nessun BOM, un a capo finale,
+il separatore anche prima della prima squadra. Dettagli che contano perché dall'altra parte c'è un
+lettore rigido, non un foglio di calcolo. All'interno di ogni squadra i giocatori escono per reparto
+e poi dal più caro, che è l'ordine con cui si legge una rosa; una virgola in un nome squadra viene
+tolta, perché il formato non prevede virgolette e spezzerebbe la riga.
+
+## Asta a sorteggio
+
+Invece di chiamare i giocatori a turno, li estrae l'app: nella schermata d'asta il pulsante
+**🎲 Estrai** pesca il prossimo e lo mette direttamente in trattativa. Dal Setup si sceglie da dove
+pescare:
+
+- **lista completa** — da tutti i giocatori ancora liberi;
+- **un reparto alla volta** — accanto al pulsante compaiono P/D/C/A e si sceglie da quale pescare,
+  come fanno le leghe che finiscono i portieri prima di passare ai difensori.
+
+Anche in Mantra il reparto è quello Classic. I ruoli Mantra sono undici e un giocatore ne ha più
+d'uno, quindi non dividono il listone in gruppi netti: per pescare serve una partizione, e l'unica
+che ce l'ha è quella dei reparti.
+
+Chi esce e non viene assegnato resta fuori dal mazzo, così non si ripresenta al colpo dopo; accanto
+al pulsante si legge quanti ne restano. Quando il mazzo finisce si rimescola con quelli avanzati
+invece di rispondere «finito», perché a metà asta restano quasi solo i giocatori che nessuno aveva
+voluto al primo giro — ed è proprio quelli che bisogna ancora assegnare.
 
 ## Scarsità
 

@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import { repartoPlans } from '../analysis'
-import { exportRoster, exportTabellone, rosterText } from '../exporters'
+import { exportRoster, exportRosterCsv, exportTabellone, rosterText } from '../exporters'
 import { clubCoverage, deals, rosterRows, teamReports, timeline } from '../report'
 import type { RosterRow } from '../report'
 import { teamStats, useStore } from '../store'
@@ -92,6 +92,14 @@ export function ReportScreen({ onBack }: { onBack: () => void }) {
             disabled={state.purchases.length === 0}
           >
             ⬇ Excel tabellone
+          </button>
+          <button
+            className="btn ghost"
+            onClick={() => exportRosterCsv(state, activeAuction.name)}
+            disabled={state.purchases.length === 0}
+            title="Rose di tutte le squadre nel formato che fantacalcio.it accetta per il caricamento"
+          >
+            ⬇ CSV per fantacalcio.it
           </button>
           <button className="btn ghost" onClick={copyText} disabled={rows.length === 0}>
             {copied ? '✔ copiata' : '📋 Rosa per chat'}

@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react'
 import { teamStats, useStore } from '../store'
-import type { AppState, Player } from '../types'
+import type { AppState, ClassicRole, Player } from '../types'
+import { CLASSIC_ROLE_LABEL, CLASSIC_ROLE_ORDER } from '../types'
+import { sorteggia } from '../sorteggio'
 import { AuctionPicker } from './AuctionsManager'
 import { CallBar } from './CallBar'
 import { LiveAdminPanel } from '../live/LiveAdminPanel'
@@ -28,6 +30,38 @@ export function AuctionScreen({
   const [tab, setTab] = useState<Tab>('rosa')
   const [dialogPlayer, setDialogPlayer] = useState<Player | null>(null)
   const [callPlayer, setCallPlayer] = useState<Player | null>(null)
+  // Usciti dal sorteggio e non assegnati. Non si salva: se la pagina si ricarica
+  // il mazzo riparte pieno, e i giocatori gia' presi restano fuori comunque.
+  const [scartati, setScartati] = useState<ReadonlySet<number>>(new Set())
+  const [ruoloSorteggio, setRuoloSorteggio] = useState<ClassicRole>('P')
+  const [notaSorteggio, setNotaSorteggio] = useState<string | null>(null)
+
+  const perReparto = state.config.sorteggioAmbito === 'ruolo'
+
+  function estrai() {
+    const esito = sorteggia(state, {
+      ambito: state.config.sorteggioAmbito,
+      ruolo: ruoloSorteggio,
+      esclusi: scartati,
+    })
+    if (!esito.player) {
+      setNotaSorteggio(
+        perReparto
+          ? `Nessun ${CLASSIC_ROLE_LABEL[ruoloSorteggio].toLowerCase()} ancora da chiamare`
+          : 'Tutti i giocatori del listone sono stati assegnati',
+      )
+      return
+    }
+    // Rimescolato: il mazzo era finito e si riparte, quindi gli scarti vecchi
+    // non valgono piu' — tranne quello appena uscito.
+    setScartati(esito.rimescolato ? new Set([esito.player.id]) : new Set(scartati).add(esito.player.id))
+    setNotaSorteggio(
+      esito.rimescolato
+        ? `Giro finito: si riparte da chi era avanzato · ${esito.rimasti} nel mazzo`
+        : `${esito.rimasti} ancora nel mazzo`,
+    )
+    setCallPlayer(esito.player)
+  }
 
   // Con una sessione live avviata il click sul listone mette sempre il giocatore
   // in trattativa: pretendere anche l'interruttore "Chiamata" acceso significava
@@ -120,6 +154,30 @@ export function AuctionScreen({
               }}
             />
           </label>
+          <div className="sorteggio" title="Estrae il prossimo giocatore da mettere in asta">
+            <button className="btn primary" onClick={estrai} disabled={state.players.length === 0}>
+              🎲 Estrai
+            </button>
+            {perReparto && (
+              <div className="sorteggio-ruoli">
+                {CLASSIC_ROLE_ORDER.map((r) => (
+                  <button
+                    key={r}
+                    className={`badge role-${r} ${ruoloSorteggio === r ? 'scelto' : ''}`}
+                    title={CLASSIC_ROLE_LABEL[r]}
+                    onClick={() => {
+                      setRuoloSorteggio(r)
+                      setNotaSorteggio(null)
+                    }}
+                  >
+                    {r}
+                  </button>
+                ))}
+              </div>
+            )}
+            {notaSorteggio && <span className="muted small">{notaSorteggio}</span>}
+          </div>
+
           {/* Con una sessione live la trattativa e' sempre attiva: l'interruttore
               non farebbe nulla, e un comando che non fa nulla confonde. */}
           {!credBanditore && (

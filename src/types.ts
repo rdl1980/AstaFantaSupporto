@@ -86,6 +86,8 @@ export interface LeagueConfig {
   rilanciRapidi: number[]
   /** Millisecondi di blocco dei pulsanti dopo un cambio di prezzo */
   attesaOffertaMs: number
+  /** Asta a sorteggio: pesca da tutto il listone o da un reparto alla volta */
+  sorteggioAmbito: 'tutti' | 'ruolo'
 }
 
 export interface AppState {

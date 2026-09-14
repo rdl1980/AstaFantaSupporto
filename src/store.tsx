@@ -38,6 +38,7 @@ export function defaultConfig(): LeagueConfig {
     secondiDa2A3: 3,
     rilanciRapidi: [1, 5, 10],
     attesaOffertaMs: 800,
+    sorteggioAmbito: 'tutti',
   }
 }
 

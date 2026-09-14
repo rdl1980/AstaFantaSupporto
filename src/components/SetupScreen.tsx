@@ -284,6 +284,41 @@ export function SetupScreen({ onDone }: { onDone: () => void }) {
       </section>
 
       <section className="card">
+        <h2>Asta a sorteggio</h2>
+        <p className="muted">
+          Invece di chiamare i giocatori a turno, li estrae l&apos;app: dalla schermata d&apos;asta il
+          pulsante <b>🎲 Estrai</b> pesca il prossimo da mettere in trattativa.
+        </p>
+        <div className="form-row">
+          <label>
+            Da dove pescare
+            <select
+              value={config.sorteggioAmbito}
+              onChange={(e) =>
+                dispatch({
+                  type: 'setConfig',
+                  patch: { sorteggioAmbito: e.target.value as 'tutti' | 'ruolo' },
+                })
+              }
+            >
+              <option value="tutti">Lista completa</option>
+              <option value="ruolo">Un reparto alla volta</option>
+            </select>
+          </label>
+        </div>
+        <p className="muted small">
+          Con <b>un reparto alla volta</b>, accanto al pulsante compaiono P/D/C/A e si sceglie da quale
+          pescare: è il modo in cui molte leghe fanno l&apos;asta, finendo i portieri prima di passare
+          ai difensori. Anche in Mantra il reparto è quello Classic — i ruoli Mantra sono undici e un
+          giocatore ne ha più d&apos;uno, quindi non dividono il listone in gruppi netti.
+        </p>
+        <p className="muted small">
+          Chi esce e non viene assegnato resta fuori dal mazzo, così non si ripresenta subito. Quando
+          il mazzo finisce si rimescola da capo con quelli avanzati.
+        </p>
+      </section>
+
+      <section className="card">
         <h2>Squadre</h2>
         <p className="muted">La prima è la tua. Puoi rinominarle anche durante l&apos;asta.</p>
         <div className="teams-grid">

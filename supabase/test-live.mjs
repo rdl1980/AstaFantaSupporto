@@ -153,6 +153,56 @@ verifica(
   JSON.stringify(ricevuti),
 )
 
+console.log('\n== Rilancio nell\'ultimo istante (contro il progetto vero) ==')
+verifica('secondo giocatore in asta', (await rpc('metti_all_asta', {
+  p_sessione: sid, p_admin_token: admin, p_giocatore_id: 5586,
+  p_nome: 'Leao', p_club: 'Milan', p_ruolo: 'D', p_ruoli_mantra: 'E', p_base: 0,
+})).ok === true)
+
+await bid(squadre[0].id, tokA, 30)
+let { data: ch } = await db.from('chiamata').select('*').eq('sessione_id', sid).maybeSingle()
+const scadenza = new Date(ch.scadenza).getTime()
+
+// Si aspetta fino a un secondo dal martello, poi si rilancia: e' la scena in cui
+// prima il giocatore veniva aggiudicato di colpo a chi aveva appena offerto.
+const attesa = scadenza - Date.now() - 1000
+console.log(`  ..   attendo ${Math.round(attesa)}ms per offrire a un soffio dal tre`)
+await new Promise((r) => setTimeout(r, Math.max(0, attesa)))
+
+const tardivo = await bid(squadre[1].id, tokB, 40)
+verifica('rilancio all\'ultimo istante accettato', tardivo.ok === true, JSON.stringify(tardivo))
+
+const subito = await rpc('aggiudica_se_scaduta', { p_sessione: sid })
+verifica(
+  'aggiudica_se_scaduta rifiuta: il conteggio e ripartito',
+  subito.ok === false && subito.motivo === 'non_ancora_scaduta',
+  JSON.stringify(subito),
+)
+
+;({ data: ch } = await db.from('chiamata').select('*').eq('sessione_id', sid).maybeSingle())
+const nuovoMargine = new Date(ch.scadenza).getTime() - Date.now()
+verifica('scadenza spostata avanti di tutta la durata', nuovoMargine > 8000, `${Math.round(nuovoMargine)}ms`)
+verifica('la chiamata e ancora aperta', ch.stato === 'active' && ch.miglior_offerente_id === squadre[1].id)
+
+console.log('\n== Rilancio rapido legato alla versione ==')
+const versione = ch.versione
+let v = await rpc('rilancia', {
+  p_sessione: sid, p_squadra: squadre[0].id, p_claim_token: tokA,
+  p_offerta: 41, p_versione_attesa: versione - 1,
+})
+verifica('base ormai vecchia rifiutata', v.ok === false && v.motivo === 'base_cambiata', JSON.stringify(v))
+
+v = await rpc('rilancia', {
+  p_sessione: sid, p_squadra: squadre[0].id, p_claim_token: tokA,
+  p_offerta: 41, p_versione_attesa: versione,
+})
+verifica('versione giusta accettata', v.ok === true && v.offerta === 41, JSON.stringify(v))
+
+const { data: sRow } = await db.from('sessione').select('rilanci_rapidi, attesa_offerta_ms').eq('id', sid).maybeSingle()
+verifica('la sessione nuova nasce con gli scalini', JSON.stringify(sRow.rilanci_rapidi) === '[1,5,10]' && sRow.attesa_offerta_ms === 800, JSON.stringify(sRow))
+
+await rpc('annulla_chiamata', { p_sessione: sid, p_admin_token: admin })
+
 await db.removeChannel(canale)
 console.log(`\n${passati} verifiche superate, ${falliti} fallite`)
 console.log(`Sessione di prova: ${sess.codice} (puoi ignorarla o cancellarla)\n`)

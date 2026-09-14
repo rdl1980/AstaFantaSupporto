@@ -11,6 +11,10 @@ export interface SessioneRow {
   attesa_secondi: number
   secondi_1_2: number
   secondi_2_3: number
+  /** Scalini dei pulsanti di rilancio rapido sul telefono */
+  rilanci_rapidi: number[]
+  /** Blocco dei pulsanti dopo un cambio di prezzo, in millisecondi */
+  attesa_offerta_ms: number
   stato: 'idle' | 'active' | 'paused' | 'closed'
 }
 
@@ -78,6 +82,7 @@ export type EsitoRilancio =
         | 'nessuna_chiamata'
         | 'non_autorizzato'
         | 'gia_tua'
+        | 'base_cambiata'
         | 'sessione_inesistente'
       offerta_attuale?: number
       minima?: number
@@ -95,5 +100,6 @@ export const MOTIVO_LEGGIBILE: Record<string, string> = {
   nessuna_chiamata: 'Nessun giocatore in asta',
   non_autorizzato: 'Non risulti abilitato per questa squadra',
   gia_tua: 'L’offerta più alta è già tua',
+  base_cambiata: 'Il prezzo è cambiato mentre offrivi: guarda la cifra e ritocca',
   sessione_inesistente: 'Sessione non trovata',
 }

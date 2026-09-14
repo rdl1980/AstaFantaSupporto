@@ -84,7 +84,8 @@ $$;
 create or replace function crea_sessione(
   p_nome text, p_modalita text, p_budget int, p_slot_config jsonb,
   p_squadre text[], p_rilancio_minimo int default 1,
-  p_attesa_secondi int default 5, p_secondi_1_2 int default 3, p_secondi_2_3 int default 3
+  p_attesa_secondi int default 5, p_secondi_1_2 int default 3, p_secondi_2_3 int default 3,
+  p_rilanci_rapidi int[] default '{1,5,10}', p_attesa_offerta_ms int default 800
 ) returns jsonb language plpgsql security definer as $$
 declare
   v_id     uuid;
@@ -102,9 +103,11 @@ begin
   end if;
 
   insert into sessione (codice, nome, modalita, budget, slot_config, rilancio_minimo,
-                        attesa_secondi, secondi_1_2, secondi_2_3, stato)
+                        attesa_secondi, secondi_1_2, secondi_2_3,
+                        rilanci_rapidi, attesa_offerta_ms, stato)
     values (v_codice, p_nome, p_modalita, p_budget, p_slot_config, p_rilancio_minimo,
-            p_attesa_secondi, p_secondi_1_2, p_secondi_2_3, 'active')
+            p_attesa_secondi, p_secondi_1_2, p_secondi_2_3,
+            p_rilanci_rapidi, p_attesa_offerta_ms, 'active')
     returning id into v_id;
 
   insert into sessione_segreto (sessione_id, admin_token) values (v_id, v_admin);
@@ -122,7 +125,8 @@ $$;
 
 create or replace function aggiorna_impostazioni(
   p_sessione uuid, p_admin_token text,
-  p_rilancio_minimo int, p_attesa_secondi int, p_secondi_1_2 int, p_secondi_2_3 int
+  p_rilancio_minimo int, p_attesa_secondi int, p_secondi_1_2 int, p_secondi_2_3 int,
+  p_rilanci_rapidi int[] default null, p_attesa_offerta_ms int default null
 ) returns jsonb language plpgsql security definer as $$
 begin
   if not exists (select 1 from sessione_segreto where sessione_id = p_sessione and admin_token = p_admin_token) then
@@ -131,7 +135,10 @@ begin
   update sessione set rilancio_minimo = greatest(1, p_rilancio_minimo),
                       attesa_secondi = greatest(0, p_attesa_secondi),
                       secondi_1_2 = greatest(1, p_secondi_1_2),
-                      secondi_2_3 = greatest(1, p_secondi_2_3)
+                      secondi_2_3 = greatest(1, p_secondi_2_3),
+                      rilanci_rapidi = coalesce(p_rilanci_rapidi, rilanci_rapidi),
+                      attesa_offerta_ms = coalesce(
+                        least(5000, greatest(0, p_attesa_offerta_ms)), attesa_offerta_ms)
     where id = p_sessione;
   return jsonb_build_object('ok', true);
 end
@@ -241,7 +248,8 @@ $$;
 -- La scadenza coincide con il "tre": da quell'istante le offerte sono chiuse.
 -- Non c'e' nessun margine dopo, il colpo di martello e' li'.
 create or replace function rilancia(
-  p_sessione uuid, p_squadra uuid, p_claim_token text, p_offerta int
+  p_sessione uuid, p_squadra uuid, p_claim_token text, p_offerta int,
+  p_versione_attesa int default null
 ) returns jsonb language plpgsql security definer as $$
 declare
   s        sessione%rowtype;
@@ -271,6 +279,17 @@ begin
 
   if now() >= c.scadenza then
     return jsonb_build_object('ok', false, 'motivo', 'chiamata_scaduta');
+  end if;
+
+  -- Un rilancio rapido ("+5") vale solo sulla base che il dito ha visto. Se nel
+  -- frattempo il prezzo si e' mosso, l'offerta calcolata non e' piu' quella che
+  -- la persona intendeva fare: meglio rifiutarla e mostrarle il nuovo numero.
+  -- Le offerte libere arrivano senza versione e non passano di qui: una cifra
+  -- digitata a mano resta quella che si voleva, comunque sia cambiata la base.
+  if p_versione_attesa is not null and p_versione_attesa <> c.versione then
+    return jsonb_build_object('ok', false, 'motivo', 'base_cambiata',
+                              'offerta_attuale', c.offerta_attuale,
+                              'versione', c.versione);
   end if;
 
   if c.miglior_offerente_id = p_squadra then

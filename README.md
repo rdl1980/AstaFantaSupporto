@@ -176,17 +176,42 @@ configurano i due tempi:
   separatamente per i due intervalli.
 
 Il &ldquo;tre&rdquo; è il colpo di martello: da quell'istante **il server non accetta più offerte** e il
-giocatore è aggiudicato. Sullo schermo &ldquo;TRE&rdquo; e &ldquo;AGGIUDICATO&rdquo; compaiono insieme e
-restano per tre secondi, con il prezzo e la squadra che se l'è preso — il tempo di far leggere com'è
-finita. Quei tre secondi sono solo di facciata sul singolo dispositivo: l'asta è già chiusa e si può
-chiamare subito il giocatore successivo. Se la chiamata scade senza offerte compare solo il
-&ldquo;tre&rdquo;, perché non c'è nulla da aggiudicare.
+giocatore è aggiudicato. L'esito — &ldquo;AGGIUDICATO&rdquo;, con il prezzo e la squadra che se l'è
+preso — resta a schermo tre secondi, il tempo di far leggere com'è finita, e sono tre secondi di
+sola facciata sul singolo dispositivo: l'asta è già chiusa e si può chiamare subito il giocatore
+successivo. Se la chiamata scade senza offerte compare solo il &ldquo;tre&rdquo;, perché non c'è
+nulla da aggiudicare.
+
+Fra il &ldquo;tre&rdquo; e il verdetto il telefono scrive *chiusura…* invece di annunciare un
+vincitore. La differenza conta: il conteggio è calcolato da ogni dispositivo, mentre chi si è preso
+il giocatore lo sa solo il server. Un rilancio arrivato nell'ultimo istante fa ripartire il
+conteggio, e prima quel dispositivo aveva già dichiarato un'aggiudicazione che veniva poi smentita.
+
+### Rilanciare senza sbagliare cifra
+
+I pulsanti rapidi — **+1, +5, +10** di serie, fino a quattro scalini configurabili dal Setup —
+mostrano ciascuno anche la cifra a cui portano, così si offre leggendo un numero e non facendo un
+conto.
+
+Dopo ogni cambio di prezzo i pulsanti restano bloccati per un attimo (800 millisecondi di serie),
+perché il caso peggiore è toccare &ldquo;+1&rdquo; nell'istante in cui la base si muove e ritrovarsi
+ad aver offerto tutt'altro. Un'offerta che parte comunque su una base ormai vecchia non viene
+corretta al rialzo: il server la **rifiuta** e mostra il prezzo aggiornato, perché un rilancio
+rapido vale solo sulla base che si stava guardando. L'offerta libera, invece, è una cifra voluta e
+passa a prescindere da come si è mossa la base.
 
 Il conteggio non viaggia sulla rete: il server trasmette solo l'istante di scadenza, e ogni
 dispositivo ricava da sé la fase in cui si trova. Così tutti vedono lo stesso numero senza un flusso
 di messaggi, e chi si riconnette a metà conteggio si riallinea da solo. Per evitare che un telefono
-con l'ora sbagliata veda un conteggio diverso, all'avvio viene misurato lo scarto rispetto
-all'orologio del server.
+con l'ora sbagliata veda un conteggio diverso, viene misurato lo scarto rispetto all'orologio del
+server — all'avvio e poi ogni cinque minuti, perché su un'asta di tre ore la deriva si fa sentire.
+
+Il realtime è un'ottimizzazione, non una dipendenza. Un canale WebSocket può morire in silenzio, e
+quando succede lo schermo resta fermo su una cifra vecchia: è successo davvero, e a rilanciare su un
+prezzo sbagliato ci si accorge tardi. Perciò il canale viene ricostruito da capo quando va in
+errore, distanziando i tentativi, e mentre un giocatore è in asta ogni dispositivo rilegge comunque
+la chiamata una volta al secondo. È una riga sola per otto telefoni, e si paga solo nei minuti in
+cui serve.
 
 ### Gli acquisti restano allineati nei due sensi
 

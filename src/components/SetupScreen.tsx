@@ -214,6 +214,60 @@ export function SetupScreen({ onDone }: { onDone: () => void }) {
             />
           </label>
         </div>
+        <div className="form-row">
+          <label>
+            Rilanci rapidi
+            <input
+              type="text"
+              inputMode="numeric"
+              value={config.rilanciRapidi.join(', ')}
+              placeholder="1, 5, 10"
+              onChange={(e) => {
+                // Si accetta qualunque separatore: mentre si digita "1, 5," la
+                // lista e' incompleta di proposito, e rifiutarla bloccherebbe
+                // la scrittura. Numeri validi ora, ordine e limiti al blur.
+                const n = e.target.value
+                  .split(/[^0-9]+/)
+                  .filter(Boolean)
+                  .map(Number)
+                  .slice(0, 4)
+                dispatch({ type: 'setConfig', patch: { rilanciRapidi: n } })
+              }}
+              onBlur={() =>
+                dispatch({
+                  type: 'setConfig',
+                  patch: {
+                    rilanciRapidi: config.rilanciRapidi.length
+                      ? [...new Set(config.rilanciRapidi.filter((x) => x >= 1))].sort((a, b) => a - b)
+                      : [1, 5, 10],
+                  },
+                })
+              }
+            />
+          </label>
+          <label>
+            Blocco dopo un rilancio (ms)
+            <input
+              type="number"
+              min={0}
+              max={5000}
+              step={100}
+              value={config.attesaOffertaMs}
+              onChange={(e) =>
+                dispatch({
+                  type: 'setConfig',
+                  patch: { attesaOffertaMs: Math.min(5000, Math.max(0, Number(e.target.value) || 0)) },
+                })
+              }
+            />
+          </label>
+        </div>
+        <p className="muted small">
+          I rilanci rapidi sono i pulsanti sul telefono: ogni scalino mostra anche la cifra a cui
+          porta. Dopo ogni cambio di prezzo restano bloccati per il tempo indicato, cosi&apos; nessuno
+          offre su una base che si e&apos; mossa fra lo sguardo e il dito. Un&apos;offerta partita
+          comunque su una base vecchia viene rifiutata dal server, non corretta al rialzo.
+        </p>
         <p className="muted small">
           Una chiamata senza rilanci dura{' '}
           <b>

@@ -82,6 +82,10 @@ export interface LeagueConfig {
   secondiDa1A2: number
   /** Secondi fra "due" e "tre", e fra "tre" e l'aggiudicazione */
   secondiDa2A3: number
+  /** Scalini dei pulsanti di rilancio rapido sul telefono dei partecipanti */
+  rilanciRapidi: number[]
+  /** Millisecondi di blocco dei pulsanti dopo un cambio di prezzo */
+  attesaOffertaMs: number
 }
 
 export interface AppState {

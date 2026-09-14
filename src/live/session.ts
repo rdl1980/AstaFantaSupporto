@@ -25,6 +25,8 @@ export async function creaSessione(args: {
   attesaSecondi: number
   secondiDa1A2: number
   secondiDa2A3: number
+  rilanciRapidi: number[]
+  attesaOffertaMs: number
 }): Promise<{ sessioneId: string; codice: string; adminToken: string }> {
   const { data, error } = await client().rpc('crea_sessione', {
     p_nome: args.nome,
@@ -36,6 +38,8 @@ export async function creaSessione(args: {
     p_attesa_secondi: args.attesaSecondi,
     p_secondi_1_2: args.secondiDa1A2,
     p_secondi_2_3: args.secondiDa2A3,
+    p_rilanci_rapidi: args.rilanciRapidi,
+    p_attesa_offerta_ms: args.attesaOffertaMs,
   })
   if (error) throw new Error(error.message)
   if (!data?.ok) throw new Error(data?.motivo ?? 'creazione fallita')
@@ -155,6 +159,8 @@ export async function aggiornaImpostazioni(args: {
   attesaSecondi: number
   secondiDa1A2: number
   secondiDa2A3: number
+  rilanciRapidi: number[]
+  attesaOffertaMs: number
 }) {
   const { error } = await client().rpc('aggiorna_impostazioni', {
     p_sessione: args.sessioneId,
@@ -163,6 +169,8 @@ export async function aggiornaImpostazioni(args: {
     p_attesa_secondi: args.attesaSecondi,
     p_secondi_1_2: args.secondiDa1A2,
     p_secondi_2_3: args.secondiDa2A3,
+    p_rilanci_rapidi: args.rilanciRapidi,
+    p_attesa_offerta_ms: args.attesaOffertaMs,
   })
   if (error) throw new Error(error.message)
 }
@@ -172,12 +180,19 @@ export async function rilancia(args: {
   squadraId: string
   claimToken: string
   offerta: number
+  /**
+   * Versione della chiamata su cui l'offerta è stata calcolata. Va passata dai
+   * rilanci rapidi, che valgono solo sulla base che si stava guardando, e
+   * lasciata vuota dalle offerte libere, che sono cifre volute a prescindere.
+   */
+  versioneAttesa?: number | null
 }): Promise<EsitoRilancio> {
   const { data, error } = await client().rpc('rilancia', {
     p_sessione: args.sessioneId,
     p_squadra: args.squadraId,
     p_claim_token: args.claimToken,
     p_offerta: args.offerta,
+    p_versione_attesa: args.versioneAttesa ?? null,
   })
   if (error) throw new Error(error.message)
   return data as EsitoRilancio
@@ -214,6 +229,10 @@ export function useLive(sessioneId: string | null): StatoLive {
   const [errore, setErrore] = useState<string | null>(null)
   const [nonce, setNonce] = useState(0)
   const vivo = useRef(true)
+  /** Quanti tentativi di riaggancio falliti di fila: serve a distanziarli */
+  const tentativi = useRef(0)
+  /** Letto dal giro di rilettura per decidere quanto stringere la cadenza */
+  const inChiamata = useRef(false)
 
   const ricarica = useCallback(() => setNonce((n) => n + 1), [])
 
@@ -234,6 +253,27 @@ export function useLive(sessioneId: string | null): StatoLive {
     setCaricato(true)
   }, [])
 
+  /**
+   * Rilettura leggera della sola chiamata: una riga, ed è quella che cambia in
+   * continuazione mentre si rilancia. Serve a tenere il prezzo aggiornato anche
+   * quando il canale realtime si è staccato senza dirlo.
+   */
+  const leggiChiamata = useCallback(async (id: string) => {
+    const { data } = await client().from('chiamata').select('*').eq('sessione_id', id).maybeSingle()
+    if (!vivo.current || !data) return
+    const riga = data as ChiamataRow
+    setChiamata(riga)
+    // Chiamata appena chiusa: il tabellone e le rose sono cambiati, e aspettare
+    // il giro lento significherebbe mostrarli vecchi per dieci secondi.
+    if (inChiamata.current && riga.stato !== 'active') void leggiTutto(id).catch(() => {})
+  }, [leggiTutto])
+
+  // Un ref invece di una dipendenza: il giro di rilettura non deve essere
+  // smontato e rimontato a ogni rilancio.
+  useEffect(() => {
+    inChiamata.current = chiamata?.stato === 'active'
+  }, [chiamata])
+
   useEffect(() => {
     vivo.current = true
     if (!sessioneId || !supabase) {
@@ -250,6 +290,8 @@ export function useLive(sessioneId: string | null): StatoLive {
 
     void sincronizzaOrologio()
     leggiTutto(sessioneId).catch((e) => vivo.current && setErrore(String(e.message ?? e)))
+
+    let riaggancio: ReturnType<typeof setTimeout> | undefined
 
     const filtro = `sessione_id=eq.${sessioneId}`
     const canale = supabase
@@ -275,19 +317,49 @@ export function useLive(sessioneId: string | null): StatoLive {
       .subscribe((stato) => {
         const attivo = stato === 'SUBSCRIBED'
         setConnesso(attivo)
-        // Tornati online si rilegge tutto: i messaggi persi non si recuperano
-        if (attivo) leggiTutto(sessioneId).catch(() => {})
+        if (attivo) {
+          tentativi.current = 0
+          // Tornati online si rilegge tutto: i messaggi persi non si recuperano
+          leggiTutto(sessioneId).catch(() => {})
+          return
+        }
+        // Un canale che va in errore resta morto: supabase-js riaggancia il
+        // socket, non necessariamente la singola sottoscrizione. Nell'asta del
+        // 2026 questo lasciava qualcuno con le cifre ferme, aggiornate solo dal
+        // giro periodico. Qui lo si ricostruisce da capo, distanziando i
+        // tentativi per non intasare la rete se la linea è davvero giù.
+        // 'CLOSED' arriva anche nella chiusura normale: rientrarci farebbe un
+        // ciclo infinito a ogni smontaggio.
+        if (stato === 'CHANNEL_ERROR' || stato === 'TIMED_OUT') {
+          const attesa = Math.min(10000, 500 * 2 ** tentativi.current)
+          tentativi.current += 1
+          riaggancio = setTimeout(() => {
+            if (vivo.current) ricarica()
+          }, attesa)
+        }
       })
 
-    // Rete di sicurezza. Misurando la latenza sul progetto vero si e' visto che
-    // nei primi istanti dopo SUBSCRIBED la replica non consegna ancora: un
-    // cambiamento che cade in quella finestra sfugge sia alla rilettura fatta
-    // alla sottoscrizione sia alla sottoscrizione stessa. Una rilettura
-    // periodica leggera chiude il buco senza che nessuno resti su una schermata
-    // vecchia.
+    // Rete di sicurezza, e dopo l'asta del 2026 è la rete che regge davvero il
+    // peso: il realtime è diventato un'ottimizzazione, non una dipendenza.
+    //
+    // Due cadenze. Mentre un giocatore è in asta si rilegge la sola chiamata
+    // ogni secondo, perché è lì che una cifra vecchia fa danno: chi rilancia
+    // deve vedere il prezzo giusto. Fuori dalla chiamata basta un giro completo
+    // ogni dieci secondi. Otto telefoni che leggono una riga al secondo sono
+    // pochi byte, e il costo si paga solo nei minuti in cui serve.
+    let giro = 0
     const periodico = setInterval(() => {
-      leggiTutto(sessioneId).catch(() => {})
-    }, 10000)
+      giro += 1
+      if (inChiamata.current) leggiChiamata(sessioneId).catch(() => {})
+      if (giro % 10 === 0) leggiTutto(sessioneId).catch(() => {})
+    }, 1000)
+
+    // L'orologio va risincronizzato ogni tanto: su un'asta di tre ore la deriva
+    // di un telefono è sufficiente a far vedere il conteggio sfasato.
+    const orologio = setInterval(() => {
+      void sincronizzaOrologio(1)
+    }, 300000)
+
 
     // Sul telefono il socket muore quando si blocca lo schermo: al ritorno
     // conviene rileggere subito invece di aspettare il giro periodico.
@@ -300,10 +372,12 @@ export function useLive(sessioneId: string | null): StatoLive {
     return () => {
       vivo.current = false
       clearInterval(periodico)
+      clearInterval(orologio)
+      clearTimeout(riaggancio)
       document.removeEventListener('visibilitychange', alRitorno)
       void db.removeChannel(canale)
     }
-  }, [sessioneId, leggiTutto, nonce])
+  }, [sessioneId, leggiTutto, leggiChiamata, ricarica, nonce])
 
   return { sessione, squadre, assegnazioni, chiamata, connesso, caricato, errore, ricarica }
 }

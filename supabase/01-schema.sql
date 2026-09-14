@@ -17,6 +17,13 @@ create table if not exists sessione (
   secondi_1_2        int  not null default 3 check (secondi_1_2 >= 1),
   -- secondi fra "due" e "tre", e fra "tre" e l'aggiudicazione
   secondi_2_3        int  not null default 3 check (secondi_2_3 >= 1),
+  -- scalini del rilancio rapido, i pulsanti sul telefono dei partecipanti
+  rilanci_rapidi     int[] not null default '{1,5,10}'
+                     check (array_length(rilanci_rapidi, 1) between 1 and 4),
+  -- millisecondi di blocco dei pulsanti dopo che il prezzo e' cambiato: il
+  -- tempo di accorgersi che il numero sotto il dito si e' mosso
+  attesa_offerta_ms  int  not null default 800
+                     check (attesa_offerta_ms between 0 and 5000),
   stato              text not null default 'idle'
                      check (stato in ('idle', 'active', 'paused', 'closed')),
   creata_il          timestamptz not null default now()

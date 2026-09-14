@@ -6,6 +6,7 @@ import { conteggio, durataTotale, etichetta } from './countdown'
 import { useEsitoRecente } from './esito'
 import {
   aggiornaImpostazioni,
+  aggiudicaSeScaduta,
   annullaChiamata,
   assegna,
   creaSessione,
@@ -65,10 +66,27 @@ export function LiveAdminPanel({
 
   // Il conteggio finito aggiudica da solo: è il gesto che il banditore farebbe
   // comunque, e toglie un click nel momento più concitato.
+  //
+  // Qui si chiama `aggiudicaSeScaduta`, **non** `assegna`. La differenza non è
+  // di stile: `assegna` è il martello manuale e aggiudica senza guardare
+  // l'orologio, mentre questo percorso parte da un conteggio calcolato in
+  // locale. Nell'asta del 2026 la conseguenza era che un rilancio arrivato un
+  // istante prima del "tre" allungava regolarmente la scadenza sul server, ma
+  // questo effetto lo scavalcava e assegnava il giocatore a chi aveva appena
+  // offerto, senza far ripartire il conteggio. Il server ora rifiuta finché la
+  // scadenza non è davvero passata, e il rilancio torna a valere.
+  //
+  // Il ritardo lascia atterrare un'offerta partita all'ultimo istante, e
+  // `miglior_offerente_id` sta fuori dalle dipendenze di proposito: prima
+  // c'era, e un rilancio tardivo faceva ripartire l'effetto aggiudicando a chi
+  // l'aveva appena fatto — l'offerta causava la propria vittoria.
   useEffect(() => {
-    if (!cred || !attiva || c?.fase !== 'scaduta' || !chiamata?.miglior_offerente_id) return
-    void assegna(cred.sessioneId, cred.adminToken).catch(() => {})
-  }, [cred, attiva, c?.fase, chiamata?.miglior_offerente_id])
+    if (!cred || !attiva || c?.fase !== 'scaduta') return
+    const t = setTimeout(() => {
+      void aggiudicaSeScaduta(cred.sessioneId).catch(() => {})
+    }, 600)
+    return () => clearTimeout(t)
+  }, [cred, attiva, c?.fase])
 
   const nomeMigliore = live.squadre.find((s) => s.id === chiamata?.miglior_offerente_id)?.nome
 
@@ -111,6 +129,8 @@ export function LiveAdminPanel({
         attesaSecondi: config.attesaSecondi,
         secondiDa1A2: config.secondiDa1A2,
         secondiDa2A3: config.secondiDa2A3,
+        rilanciRapidi: config.rilanciRapidi,
+        attesaOffertaMs: config.attesaOffertaMs,
       })
       setCred({ codice: r.codice, sessioneId: r.sessioneId, adminToken: r.adminToken })
       setApri(true)
@@ -274,6 +294,8 @@ export function LiveAdminPanel({
                   attesaSecondi: config.attesaSecondi,
                   secondiDa1A2: config.secondiDa1A2,
                   secondiDa2A3: config.secondiDa2A3,
+                  rilanciRapidi: config.rilanciRapidi,
+                  attesaOffertaMs: config.attesaOffertaMs,
                 }).catch((e) => setErrore(String(e.message)))
               }
             >

@@ -151,6 +151,7 @@ function Terminale({
   const [esito, setEsito] = useState<EsitoRilancio | null>(null)
   const [offertaLibera, setOffertaLibera] = useState('')
   const [inviando, setInviando] = useState(false)
+  const [versioneSbloccata, setVersioneSbloccata] = useState<number | null>(null)
   const [vista, setVista] = useState<'asta' | 'rosa' | 'tabellone'>('asta')
 
   const chiamata = live.chiamata
@@ -185,13 +186,47 @@ function Terminale({
     return () => clearTimeout(t)
   }, [attiva, c?.fase, cred.sessioneId])
 
+  // Ogni movimento della chiamata blocca i pulsanti per un attimo.
+  //
+  // Nell'asta del 2026 era il difetto piu' odiato: la cifra si aggiornava
+  // nell'istante fra lo sguardo e il dito, e "+1" partiva su una base diversa da
+  // quella letta. Il blocco da' il tempo di accorgersi che il numero si e'
+  // mosso; il controllo di versione lato server chiude il caso per le offerte
+  // che scivolano comunque dentro la finestra.
+  //
+  // Il blocco e' espresso come "la versione a schermo non e' ancora sbloccata",
+  // non come un istante da confrontare con l'orologio: cosi' si ricava durante
+  // il render, senza leggere l'ora in un punto che React puo' rieseguire.
+  const attesaOfferta = sessione.attesa_offerta_ms ?? 800
+  const versioneCorrente = chiamata?.versione ?? null
+  const bloccato = attesaOfferta > 0 && versioneCorrente != null && versioneCorrente !== versioneSbloccata
+
+  useEffect(() => {
+    if (!bloccato || versioneCorrente == null) return
+    const t = setTimeout(() => setVersioneSbloccata(versioneCorrente), attesaOfferta)
+    return () => clearTimeout(t)
+  }, [bloccato, versioneCorrente, attesaOfferta])
+
+  // Gli scalini non possono scendere sotto il rilancio minimo, altrimenti il
+  // pulsante manderebbe un'offerta che il server rifiuta di sicuro.
+  const scalini = useMemo(() => {
+    const base = sessione.rilanci_rapidi?.length ? sessione.rilanci_rapidi : [1, 5, 10]
+    const minimo = Math.max(1, sessione.rilancio_minimo)
+    return [...new Set(base.map((n) => Math.max(minimo, Math.round(n))))].sort((a, b) => a - b)
+  }, [sessione.rilanci_rapidi, sessione.rilancio_minimo])
+
   const prossima = (chiamata?.offerta_attuale ?? 0) + sessione.rilancio_minimo
   const ruoloPieno = chiamata?.ruolo_classic
     ? slotRuoloPieno(sessione, live.assegnazioni, cred.squadraId, chiamata.ruolo_classic)
     : false
   const posso = attiva && !sonoIlMigliore && !ruoloPieno && prossima <= mia.maxOfferta && c?.fase !== 'scaduta'
 
-  async function invia(offerta: number) {
+  /**
+   * @param versioneAttesa versione su cui l'offerta e' stata calcolata. La
+   *   passano i pulsanti rapidi, che valgono solo sulla base letta; l'offerta
+   *   libera no, perche' una cifra digitata resta quella che si voleva.
+   */
+  async function invia(offerta: number, versioneAttesa?: number | null) {
     if (inviando) return
     setInviando(true)
     setEsito(null)
@@ -201,6 +236,7 @@ function Terminale({
         squadraId: cred.squadraId,
         claimToken: cred.claimToken,
         offerta,
+        versioneAttesa,
       })
       setEsito(r)
       if (r.ok) setOffertaLibera('')
@@ -291,9 +327,13 @@ function Terminale({
             </div>
             <div className={`pt-conteggio fase-${c?.fase} ${c?.fase === 'conteggio' ? 'num-' + c.numero : ''}`}>
               {c ? etichetta(c) : ''}
-              {/* Senza offerte non c'e' nulla da aggiudicare: resta solo il tre */}
+              {/* Al "tre" si sa che il conteggio locale e' finito, non chi ha
+                  vinto: un rilancio dell'ultimo istante puo' aver gia' allungato
+                  la scadenza sul server. Prima qui compariva "AGGIUDICATO" e
+                  l'aggiudicazione veniva poi smentita. Il verdetto arriva quando
+                  il server chiude davvero la chiamata, via `esitoChiamata`. */}
               {c?.fase === 'scaduta' && chiamata?.miglior_offerente_id && (
-                <div className="pt-aggiudicato">AGGIUDICATO</div>
+                <div className="pt-chiusura">chiusura…</div>
               )}
             </div>
             <div className="pt-offerta">
@@ -310,9 +350,25 @@ function Terminale({
           </div>
 
           <div className="pt-azioni">
-            <button className="pt-piu" disabled={!posso || inviando} onClick={() => void invia(prossima)}>
-              +{sessione.rilancio_minimo} → <b>{prossima}</b>
-            </button>
+            <div className="pt-rapidi">
+              {scalini.map((step) => {
+                const cifra = (chiamata!.offerta_attuale ?? 0) + step
+                return (
+                  <button
+                    key={step}
+                    className="pt-piu"
+                    disabled={!posso || inviando || bloccato || cifra > mia.maxOfferta}
+                    onClick={() => void invia(cifra, chiamata!.versione)}
+                  >
+                    <span className="pt-piu-step">+{step}</span>
+                    <b className="pt-piu-cifra">{cifra}</b>
+                  </button>
+                )
+              })}
+            </div>
+            {bloccato && posso && (
+              <p className="muted small pt-msg pt-blocco">Il prezzo è appena cambiato…</p>
+            )}
             <div className="pt-libera">
               <input
                 type="number"

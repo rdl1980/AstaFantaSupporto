@@ -23,10 +23,18 @@ che era già pubblicata.
 **Quando le funzioni cambiano** basta rieseguire `02-functions.sql`: usa
 `create or replace`, quindi rilanciarlo è sempre sicuro e non tocca i dati.
 
-**Su un progetto già avviato** va eseguito anche `04-tempi-separati.sql`, una volta
-sola: separa i due intervalli del conteggio (uno→due e due→tre), che prima erano un
-unico valore, ed elimina le vecchie versioni delle funzioni. Dopo di esso, rieseguire
-`02-functions.sql`.
+**Su un progetto già avviato** vanno eseguite anche le migrazioni, una volta sola
+ciascuna e nell'ordine, rieseguendo `02-functions.sql` dopo ognuna:
+
+- `04-tempi-separati.sql` — separa i due intervalli del conteggio (uno→due e
+  due→tre), che prima erano un unico valore.
+- `05-rilanci-rapidi.sql` — aggiunge gli scalini dei pulsanti rapidi, il blocco
+  dopo un cambio di prezzo e l'offerta legata alla versione della chiamata.
+
+Entrambe eliminano le firme vecchie delle funzioni: senza quel passaggio Postgres
+continuerebbe a scegliere una versione che cerca colonne non più esistenti.
+`npm run test:sql` collauda anche questo percorso, ricostruendo lo schema com'era
+prima e applicandoci sopra la migrazione due volte di fila.
 
 La scadenza di una chiamata coincide con il &ldquo;tre&rdquo;: `attesa + (1→2) + (2→3)`.
 Da quell'istante `rilancia` rifiuta le offerte con `chiamata_scaduta`.

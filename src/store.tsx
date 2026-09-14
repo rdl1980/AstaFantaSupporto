@@ -36,6 +36,8 @@ export function defaultConfig(): LeagueConfig {
     attesaSecondi: 5,
     secondiDa1A2: 3,
     secondiDa2A3: 3,
+    rilanciRapidi: [1, 5, 10],
+    attesaOffertaMs: 800,
   }
 }
 
@@ -72,10 +74,26 @@ function newAuction(name: string, state: AppState): Auction {
   return { id: newId(), name, createdAt: now, updatedAt: now, state }
 }
 
+/**
+ * Un backup vecchio puo' avere `rilanciRapidi` assente o ridotto a un array
+ * vuoto: senza scalini il telefono non mostrerebbe alcun pulsante per offrire.
+ */
+function sanitizeConfig(config: LeagueConfig | undefined): LeagueConfig {
+  const unito = { ...defaultConfig(), ...config }
+  const scalini = (Array.isArray(unito.rilanciRapidi) ? unito.rilanciRapidi : [])
+    .map((n) => Math.round(Number(n)))
+    .filter((n) => Number.isFinite(n) && n >= 1)
+  return {
+    ...unito,
+    rilanciRapidi: scalini.length ? [...new Set(scalini)].sort((a, b) => a - b).slice(0, 4) : [1, 5, 10],
+    attesaOffertaMs: Math.min(5000, Math.max(0, Math.round(Number(unito.attesaOffertaMs) || 0))),
+  }
+}
+
 /** Uno stato salvato da una versione precedente puo non avere i campi aggiunti dopo. */
 function sanitize(state: AppState): AppState {
   return {
-    config: { ...defaultConfig(), ...state.config },
+    config: sanitizeConfig(state.config),
     players: Array.isArray(state.players) ? state.players : [],
     purchases: Array.isArray(state.purchases) ? state.purchases : [],
     targets: state.targets ?? {},

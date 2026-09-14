@@ -242,5 +242,98 @@ verifica(
   !valori.includes(admin) && !valori.includes(tokA),
 )
 
+// --------------------------------------- rilancio all'ultimo istante --------
+//
+// Il guasto dell'asta del 2026: chi rilanciava un attimo prima del "tre" si
+// portava via il giocatore senza che il conteggio ripartisse. La causa stava nel
+// client, che chiamava `assegna` (il martello manuale, che non guarda
+// l'orologio) invece di `aggiudica_se_scaduta`. Qui si fissa il contratto del
+// server, cosi' se qualcuno ricollega il pulsante sbagliato il collaudo protesta.
+console.log('\n== Rilancio nell\'ultimo istante ==')
+await rpc('annulla_chiamata', { p_sessione: sid, p_admin_token: admin })
+const messo = await rpc('metti_all_asta', { ...inAsta, p_giocatore_id: 900, p_nome: 'Leao', p_ruolo: 'D' })
+verifica('giocatore messo in asta per la prova', messo.ok === true, JSON.stringify(messo))
+await rpc('rilancia', { p_sessione: sid, p_squadra: B.id, p_claim_token: tokB, p_offerta: 100 })
+
+// La chiamata sta per scadere: manca un soffio al martello
+await db.query("update chiamata set scadenza = now() + interval '200 milliseconds' where sessione_id=$1", [sid])
+
+r = await rpc('rilancia', { p_sessione: sid, p_squadra: A.id, p_claim_token: tokA, p_offerta: 150 })
+verifica('rilancio a un soffio dalla scadenza accettato', r.ok === true, JSON.stringify(r))
+
+let ch = (await db.query('select * from chiamata where sessione_id=$1', [sid])).rows[0]
+const margine = new Date(ch.scadenza).getTime() - Date.now()
+verifica('il conteggio riparte da capo: scadenza spostata avanti', margine > 5000, margine + 'ms')
+
+const troppoPresto = await rpc('aggiudica_se_scaduta', { p_sessione: sid })
+verifica(
+  'aggiudica_se_scaduta rifiuta finche la nuova scadenza non e passata',
+  troppoPresto.ok === false && troppoPresto.motivo === 'non_ancora_scaduta',
+  JSON.stringify(troppoPresto),
+)
+
+ch = (await db.query('select * from chiamata where sessione_id=$1', [sid])).rows[0]
+verifica(
+  'la chiamata resta aperta sul nuovo miglior offerente',
+  ch.stato === 'active' && ch.miglior_offerente_id === A.id,
+)
+
+// `assegna` invece aggiudica comunque: e' il martello del banditore, non un
+// automatismo, e resta raggiungibile solo dal pulsante esplicito.
+const manuale = await rpc('assegna', { p_sessione: sid, p_admin_token: admin })
+verifica(
+  'assegna resta il martello manuale e chiude anche prima della scadenza',
+  manuale.ok === true && manuale.squadra_id === A.id,
+)
+
+// --------------------------------------- offerta legata alla versione -------
+//
+// "+5" vale solo sulla base che il dito ha letto: se il prezzo si muove nel
+// frattempo, l'offerta calcolata non e' piu' quella voluta.
+console.log('\n== Rilanci rapidi e versione della chiamata ==')
+await rpc('metti_all_asta', { ...inAsta, p_giocatore_id: 901, p_nome: 'Lautaro', p_ruolo: 'D' })
+await rpc('rilancia', { p_sessione: sid, p_squadra: B.id, p_claim_token: tokB, p_offerta: 100 })
+ch = (await db.query('select * from chiamata where sessione_id=$1', [sid])).rows[0]
+const versione = ch.versione
+
+r = await rpc('rilancia', {
+  p_sessione: sid, p_squadra: A.id, p_claim_token: tokA, p_offerta: 105,
+  p_versione_attesa: versione - 1,
+})
+verifica(
+  'rilancio rapido su una base ormai vecchia rifiutato',
+  r.ok === false && r.motivo === 'base_cambiata' && r.offerta_attuale === 100,
+  JSON.stringify(r),
+)
+
+ch = (await db.query('select * from chiamata where sessione_id=$1', [sid])).rows[0]
+verifica('il rifiuto non tocca il prezzo', ch.offerta_attuale === 100 && ch.miglior_offerente_id === B.id)
+
+r = await rpc('rilancia', {
+  p_sessione: sid, p_squadra: A.id, p_claim_token: tokA, p_offerta: 105,
+  p_versione_attesa: versione,
+})
+verifica('rilancio rapido sulla versione giusta accettato', r.ok === true && r.offerta === 105, JSON.stringify(r))
+
+// L'offerta libera e' una cifra voluta: non dipende dalla base, e passa senza versione.
+r = await rpc('rilancia', { p_sessione: sid, p_squadra: B.id, p_claim_token: tokB, p_offerta: 300 })
+verifica('offerta libera senza versione accettata comunque', r.ok === true && r.offerta === 300, JSON.stringify(r))
+await rpc('annulla_chiamata', { p_sessione: sid, p_admin_token: admin })
+
+// --------------------------------------- impostazioni dei rilanci rapidi ----
+console.log('\n== Rilanci rapidi: impostazioni ==')
+const pre = (await db.query('select rilanci_rapidi, attesa_offerta_ms from sessione where id=$1', [sid])).rows[0]
+verifica('scalini predefiniti 1/5/10', JSON.stringify(pre.rilanci_rapidi) === '[1,5,10]', JSON.stringify(pre.rilanci_rapidi))
+verifica('blocco predefinito di 800ms', pre.attesa_offerta_ms === 800)
+
+await rpc('aggiorna_impostazioni', {
+  p_sessione: sid, p_admin_token: admin,
+  p_rilancio_minimo: 1, p_attesa_secondi: 5, p_secondi_1_2: 3, p_secondi_2_3: 4,
+  p_rilanci_rapidi: '{2,10,25}', p_attesa_offerta_ms: 1200,
+})
+const post = (await db.query('select rilanci_rapidi, attesa_offerta_ms from sessione where id=$1', [sid])).rows[0]
+verifica('scalini aggiornabili dal banditore', JSON.stringify(post.rilanci_rapidi) === '[2,10,25]', JSON.stringify(post.rilanci_rapidi))
+verifica('blocco aggiornabile dal banditore', post.attesa_offerta_ms === 1200)
+
 console.log(`\n${passati} verifiche superate, ${falliti} fallite\n`)
 process.exit(falliti === 0 ? 0 : 1)

@@ -1582,3 +1582,86 @@ tr.won { box-shadow: inset 3px 0 0 var(--green); }
   border-color: var(--text);
   box-shadow: var(--shadow-sm);
 }
+
+/* ------------------------------------------------ pausa dell'asta live ---- */
+
+/* Sul telefono deve saltare all'occhio: chi guarda lo schermo per capire se puo'
+   ancora offrire non deve dedurlo dall'assenza del conteggio. */
+.pt-sospesa {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 10px;
+  border-radius: var(--r-md, 10px);
+  background: color-mix(in srgb, var(--warn) 18%, var(--bg2));
+  border: 1px solid var(--warn);
+  color: var(--warn);
+  font-weight: 800;
+  letter-spacing: 0.08em;
+}
+
+.pt-sospesa .small { font-weight: 400; letter-spacing: 0; opacity: 0.85; }
+
+/* Il conteggio fermo resta leggibile ma spento: si vede dov'era senza sembrare
+   che stia ancora scorrendo. */
+.pt-congelato { opacity: 0.75; }
+.pt-conteggio.fase-fermo { color: var(--warn); animation: none; }
+
+.pt-audio { padding-left: 8px; padding-right: 8px; }
+
+.live-sospesa {
+  color: var(--warn);
+  font-weight: 700;
+  letter-spacing: 0.06em;
+}
+
+/* ----------------------------------------------- pressione e inflazione --- */
+
+.suggest-oggi { color: var(--warn); }
+
+/* Un pallino e il testo pieno per chi quel reparto lo deve ancora coprire: sono
+   quelli che rilanciano davvero, e vanno distinti da chi ha solo i crediti. */
+.rival.fame { color: var(--text); font-weight: 600; }
+.rival:not(.fame) { opacity: 0.6; }
+
+.pressione { display: flex; flex-direction: column; gap: 10px; }
+
+.pressione-grande {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.pressione-grande > b {
+  font-size: 30px;
+  font-variant-numeric: tabular-nums;
+}
+
+.pressione-reparti {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin: 8px 0;
+}
+
+.pressione-tabella { width: 100%; border-collapse: collapse; }
+
+.pressione-tabella th {
+  text-align: left;
+  font-weight: 600;
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted, #8b97ad);
+  padding: 4px 6px;
+  border-bottom: 1px solid var(--border);
+}
+
+.pressione-tabella th.num { text-align: right; }
+.pressione-tabella td { padding: 5px 6px; border-bottom: 1px solid var(--border-soft, var(--border)); }
+.pressione-tabella tr.mia { background: var(--bg-hi, var(--bg3)); }
+
+.pressione-mancanti { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+.pressione-mancanti .badge { margin-right: 2px; }

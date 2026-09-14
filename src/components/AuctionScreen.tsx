@@ -1,5 +1,7 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { teamStats, useStore } from '../store'
+import { CAMPIONE_MINIMO, etichettaInflazione, inflazione } from '../inflazione'
+import { PressurePanel } from './PressurePanel'
 import type { AppState, ClassicRole, Player } from '../types'
 import { CLASSIC_ROLE_LABEL, CLASSIC_ROLE_ORDER } from '../types'
 import { sorteggia } from '../sorteggio'
@@ -16,7 +18,7 @@ import { PurchaseDialog } from './PurchaseDialog'
 import { ScarcityPanel } from './ScarcityPanel'
 import { TeamsPanel } from './TeamsPanel'
 
-type Tab = 'rosa' | 'squadre' | 'obiettivi' | 'scarsita' | 'moduli'
+type Tab = 'rosa' | 'squadre' | 'pressione' | 'obiettivi' | 'scarsita' | 'moduli'
 
 export function AuctionScreen({
   onSetup,
@@ -25,7 +27,7 @@ export function AuctionScreen({
   onSetup: () => void
   onReport: () => void
 }) {
-  const { state, dispatch, myTeamId, saveError, activeAuction } = useStore()
+  const { state, dispatch, myTeamId, saveError, activeAuction, suggestions } = useStore()
   const [credBanditore, setCredBanditore] = useCredenzialiBanditore(activeAuction.id)
   const [tab, setTab] = useState<Tab>('rosa')
   const [dialogPlayer, setDialogPlayer] = useState<Player | null>(null)
@@ -72,6 +74,7 @@ export function AuctionScreen({
     state.config.callMode || credBanditore ? setCallPlayer(p) : setDialogPlayer(p)
 
   const myStats = teamStats(state, myTeamId)
+  const infl = useMemo(() => inflazione(state, suggestions), [state, suggestions])
 
   // Scorciatoia: / per cercare
   useEffect(() => {
@@ -126,6 +129,19 @@ export function AuctionScreen({
             <span className="muted">Slot</span>{' '}
             <b>
               {myStats.count}/{myStats.count + myStats.slotsLeft}
+            </b>
+          </div>
+          <div
+            className="stat"
+            title={
+              infl.scostamento === null
+                ? `Servono almeno ${CAMPIONE_MINIMO} acquisti con un prezzo suggerito per dire qualcosa (ora ${infl.campione})`
+                : `La lega ha pagato ${infl.pagato} dove il suggerito diceva ${infl.atteso}, su ${infl.campione} acquisti`
+            }
+          >
+            <span className="muted">Inflazione</span>{' '}
+            <b className={infl.scostamento === null ? 'muted' : infl.scostamento > 0 ? 'warn' : 'ok'}>
+              {etichettaInflazione(infl.scostamento)}
             </b>
           </div>
         </div>
@@ -228,6 +244,9 @@ export function AuctionScreen({
             <button className={tab === 'squadre' ? 'active' : ''} onClick={() => setTab('squadre')}>
               Squadre
             </button>
+            <button className={tab === 'pressione' ? 'active' : ''} onClick={() => setTab('pressione')}>
+              Pressione
+            </button>
             <button className={tab === 'obiettivi' ? 'active' : ''} onClick={() => setTab('obiettivi')}>
               Obiettivi ★
             </button>
@@ -243,6 +262,7 @@ export function AuctionScreen({
           <div className="tab-content">
             {tab === 'rosa' && <MyRoster onPick={setDialogPlayer} />}
             {tab === 'squadre' && <TeamsPanel onPick={setDialogPlayer} />}
+            {tab === 'pressione' && <PressurePanel />}
             {tab === 'obiettivi' && <PrepPanel onPick={setDialogPlayer} />}
             {tab === 'scarsita' && <ScarcityPanel onPick={setDialogPlayer} />}
             {tab === 'moduli' && state.config.mode === 'mantra' && <ModulesPanel onPick={setDialogPlayer} />}

@@ -211,6 +211,9 @@ begin
     return jsonb_build_object('ok', false, 'motivo', 'non_autorizzato');
   end if;
   select * into s from sessione where id = p_sessione;
+  if s.stato = 'paused' then
+    return jsonb_build_object('ok', false, 'motivo', 'asta_sospesa');
+  end if;
   if exists (select 1 from assegnazione where sessione_id = p_sessione and giocatore_id = p_giocatore_id) then
     return jsonb_build_object('ok', false, 'motivo', 'gia_assegnato');
   end if;
@@ -237,7 +240,7 @@ begin
   update chiamata set stato = 'idle', giocatore_id = null, giocatore_nome = null,
                       club = null, ruolo_classic = null, ruoli_mantra = null,
                       offerta_attuale = null, miglior_offerente_id = null,
-                      scadenza = null, versione = versione + 1
+                      scadenza = null, rimanenza_ms = null, versione = versione + 1
     where sessione_id = p_sessione;
   return jsonb_build_object('ok', true);
 end
@@ -271,6 +274,10 @@ begin
                  where sq.id = p_squadra and sq.sessione_id = p_sessione
                    and ss.claim_token = p_claim_token) then
     return jsonb_build_object('ok', false, 'motivo', 'non_autorizzato');
+  end if;
+
+  if c.stato = 'paused' then
+    return jsonb_build_object('ok', false, 'motivo', 'asta_sospesa');
   end if;
 
   if c.stato <> 'active' then
@@ -359,7 +366,7 @@ begin
   update chiamata set stato = 'idle', giocatore_id = null, giocatore_nome = null,
                       club = null, ruolo_classic = null, ruoli_mantra = null,
                       offerta_attuale = null, miglior_offerente_id = null,
-                      scadenza = null, versione = versione + 1
+                      scadenza = null, rimanenza_ms = null, versione = versione + 1
     where sessione_id = p_sessione;
 
   return jsonb_build_object('ok', true, 'squadra_id', c.miglior_offerente_id,
@@ -396,10 +403,68 @@ begin
   update chiamata set stato = 'idle', giocatore_id = null, giocatore_nome = null,
                       club = null, ruolo_classic = null, ruoli_mantra = null,
                       offerta_attuale = null, miglior_offerente_id = null,
-                      scadenza = null, versione = versione + 1
+                      scadenza = null, rimanenza_ms = null, versione = versione + 1
     where sessione_id = p_sessione;
 
   return jsonb_build_object('ok', true, 'squadra_id', c.miglior_offerente_id,
                             'prezzo', c.offerta_attuale, 'giocatore_id', c.giocatore_id);
+end
+$$;
+
+-- ------------------------------------------------------------- pausa -------
+
+-- Sospende l'asta. Il conteggio non e' trasmesso: ogni client lo ricava dalla
+-- scadenza, che e' un istante assoluto e durante la pausa scorrerebbe via. Per
+-- questo si salva quanto mancava e si cancella la scadenza: finche' e' sospesa
+-- non esiste un istante in cui il martello cade.
+create or replace function sospendi_asta(p_sessione uuid, p_admin_token text)
+returns jsonb language plpgsql security definer as $$
+declare
+  c        chiamata%rowtype;
+  v_resta  int := null;
+begin
+  if not exists (select 1 from sessione_segreto
+                 where sessione_id = p_sessione and admin_token = p_admin_token) then
+    return jsonb_build_object('ok', false, 'motivo', 'non_autorizzato');
+  end if;
+
+  select * into c from chiamata where sessione_id = p_sessione for update;
+
+  if c.stato = 'active' then
+    -- Se la scadenza e' gia' passata resta 0: alla ripresa il martello cade
+    -- subito, che e' quello che sarebbe successo senza la pausa.
+    v_resta := greatest(0, floor(extract(epoch from (c.scadenza - now())) * 1000)::int);
+    update chiamata set stato = 'paused', rimanenza_ms = v_resta, scadenza = null,
+                        versione = versione + 1
+      where sessione_id = p_sessione;
+  end if;
+
+  update sessione set stato = 'paused' where id = p_sessione;
+  return jsonb_build_object('ok', true, 'rimanenza_ms', v_resta);
+end
+$$;
+
+-- Riprende da dove si era fermata: la scadenza si ricostruisce sommando a
+-- adesso il tempo che era rimasto.
+create or replace function riprendi_asta(p_sessione uuid, p_admin_token text)
+returns jsonb language plpgsql security definer as $$
+declare c chiamata%rowtype;
+begin
+  if not exists (select 1 from sessione_segreto
+                 where sessione_id = p_sessione and admin_token = p_admin_token) then
+    return jsonb_build_object('ok', false, 'motivo', 'non_autorizzato');
+  end if;
+
+  select * into c from chiamata where sessione_id = p_sessione for update;
+
+  if c.stato = 'paused' then
+    update chiamata set stato = 'active', rimanenza_ms = null,
+                        scadenza = now() + make_interval(secs => coalesce(c.rimanenza_ms, 0) / 1000.0),
+                        versione = versione + 1
+      where sessione_id = p_sessione;
+  end if;
+
+  update sessione set stato = 'active' where id = p_sessione;
+  return jsonb_build_object('ok', true);
 end
 $$;

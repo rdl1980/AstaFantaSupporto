@@ -25,6 +25,10 @@ Fatto = presente nell'app; le altre voci non sono ancora implementate.
 - Avvisi di sforamento del budget nel dialog e nella barra di chiamata
 - Export CSV delle rose nel formato di caricamento di fantacalcio.it
 - Asta a sorteggio: estrazione del prossimo giocatore, da tutto il listone o da un reparto
+- Pausa dell'asta live: conteggio congelato e ripreso dal punto esatto
+- Tono del conteggio sui telefoni, con avviso quando qualcuno ti supera
+- Pressione: chi ha fame di quale reparto e quanto può spendere per slot
+- Inflazione dell'asta in diretta, con il suggerito ritarato sul mercato reale
 
 ## Priorità alta
 
@@ -80,59 +84,37 @@ Colonne configurabili nel listone, densità delle righe, dimensione del testo.
 
 ## Da valutare (proposte 2026-09-14)
 
-Dieci idee messe sul tavolo dopo la prima asta live vera. L'ordine è quello che
-proporrei di seguire, non quello in cui sono venute in mente.
+Idee messe sul tavolo dopo la prima asta live vera. Le prime quattro (pausa,
+suono, pressione, inflazione) sono state realizzate il 2026-09-14 e sono
+elencate fra le cose fatte; restano queste.
 
-### 1. Pausa dell'asta live
-Un pulsante che congela tutto: conteggio fermo, offerte rifiutate, sui telefoni la
-scritta che l'asta è sospesa. Lo stato `paused` esiste già nello schema e nessuno lo
-usa. È la prima cosa che serve quando qualcuno deve alzarsi da tavola o nasce una
-discussione. Piccola.
-
-### 2. Suono del conteggio sui telefoni
-Un tono su *uno, due, tre* e uno diverso sull'aggiudicazione. In una stanza rumorosa
-il conteggio a schermo si perde, e chi guarda altrove scopre tardi di essere stato
-superato. Costa pochissimo e si sente subito.
-
-### 3. Chi ha fame di cosa
-Per ogni avversario: quali reparti gli mancano, quanti crediti ha, e quanto può
-spendere in media per ogni slot che gli resta. Trasforma «Gennaro ha 800 crediti» in
-«Gennaro *deve* prendere due portieri, sul prossimo tirerà». Oggi la scheda Squadre
-dà i numeri grezzi ma non la lettura.
-
-### 4. Inflazione dell'asta, in diretta
-Un numero solo: quanto la stanza sta pagando sopra o sotto il prezzo suggerito,
-aggiornato a ogni acquisto. Serve a ritarare i propri massimi a metà strada, invece
-di scoprire alla fine di aver comprato tutto caro o di essere rimasto con 900 crediti
-in mano.
-
-### 5. Turno di chiamata
+### 1. Turno di chiamata
 Chi chiama adesso, visibile su tutti i telefoni, con rotazione automatica. Molte
 leghe chiamano a giro invece che a sorteggio, e tenere il conto a voce è una fonte
 sicura di litigi.
 
-### 6. Import delle rose da CSV
+### 2. Import delle rose da CSV
 L'inverso dell'export appena fatto: caricare rose già esistenti — quelle dell'anno
 scorso, o quelle di un'altra lega — per partire da una situazione e non dal vuoto.
 Stesso formato, letto al contrario.
 
-### 7. Storico prezzi fra le aste
+### 3. Storico prezzi fra le aste
 Salvare a quanto è andato davvero ogni giocatore, asta dopo asta. L'anno prossimo il
 prezzo suggerito nasce da quanto paga *la tua lega*, non dal listino: con 8 squadre e
 4000 crediti le distorsioni sono sempre le stesse e si ripetono. È l'unica voce che
 vale di più ogni anno che passa.
 
-### 8. Asta di riparazione
+### 4. Asta di riparazione
 Una seconda fase sulla rosa esistente: svincoli che restituiscono crediti, nuovi
 acquisti, slot da rispettare. Oggi per il mercato di gennaio bisognerebbe ricostruire
 tutto a mano.
 
-### 9. App installabile sul telefono
+### 5. App installabile sul telefono
 Il terminale del partecipante come icona sulla schermata iniziale, con l'ultimo stato
 visibile anche se la linea cade. Toglie di mezzo il «qual era il link?» e la barra del
 browser, che su uno schermo piccolo si mangia lo spazio del conteggio.
 
-### 10. Annulla e ripeti completi
+### 6. Annulla e ripeti completi
 Oggi si annulla solo l'ultimo acquisto. In un'asta confusa capita di accorgersi tre
 chiamate dopo di aver scritto il prezzo sbagliato o la squadra sbagliata, e servirebbe
 tornare indietro di più passi senza rovinare la cronologia.

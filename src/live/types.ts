@@ -51,6 +51,8 @@ export interface ChiamataRow {
   miglior_offerente_id: string | null
   stato: 'idle' | 'active' | 'paused'
   scadenza: string | null
+  /** Millisecondi che mancavano al martello quando l'asta e' stata sospesa */
+  rimanenza_ms: number | null
   versione: number
 }
 
@@ -83,6 +85,7 @@ export type EsitoRilancio =
         | 'non_autorizzato'
         | 'gia_tua'
         | 'base_cambiata'
+        | 'asta_sospesa'
         | 'sessione_inesistente'
       offerta_attuale?: number
       minima?: number
@@ -101,5 +104,6 @@ export const MOTIVO_LEGGIBILE: Record<string, string> = {
   non_autorizzato: 'Non risulti abilitato per questa squadra',
   gia_tua: 'L’offerta più alta è già tua',
   base_cambiata: 'Il prezzo è cambiato mentre offrivi: guarda la cifra e ritocca',
+  asta_sospesa: 'Asta sospesa dal banditore',
   sessione_inesistente: 'Sessione non trovata',
 }

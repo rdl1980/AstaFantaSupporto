@@ -30,8 +30,10 @@ ciascuna e nell'ordine, rieseguendo `02-functions.sql` dopo ognuna:
   due→tre), che prima erano un unico valore.
 - `05-rilanci-rapidi.sql` — aggiunge gli scalini dei pulsanti rapidi, il blocco
   dopo un cambio di prezzo e l'offerta legata alla versione della chiamata.
+- `06-pausa.sql` — aggiunge la pausa dell'asta: il campo che congela il tempo
+  rimasto e le funzioni `sospendi_asta` / `riprendi_asta`.
 
-Entrambe eliminano le firme vecchie delle funzioni: senza quel passaggio Postgres
+Tutte eliminano le firme vecchie delle funzioni: senza quel passaggio Postgres
 continuerebbe a scegliere una versione che cerca colonne non più esistenti.
 `npm run test:sql` collauda anche questo percorso, ricostruendo lo schema com'era
 prima e applicandoci sopra la migrazione due volte di fila.

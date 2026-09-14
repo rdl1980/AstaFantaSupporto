@@ -335,5 +335,75 @@ const post = (await db.query('select rilanci_rapidi, attesa_offerta_ms from sess
 verifica('scalini aggiornabili dal banditore', JSON.stringify(post.rilanci_rapidi) === '[2,10,25]', JSON.stringify(post.rilanci_rapidi))
 verifica('blocco aggiornabile dal banditore', post.attesa_offerta_ms === 1200)
 
+console.log('\n== Pausa dell asta ==')
+const messoP = await rpc('metti_all_asta', { ...inAsta, p_giocatore_id: 810, p_nome: 'Bastoni', p_ruolo: 'D' })
+verifica('giocatore in asta per la prova di pausa', messoP.ok === true, JSON.stringify(messoP))
+await rpc('rilancia', { p_sessione: sid, p_squadra: A.id, p_claim_token: tokA, p_offerta: 60 })
+
+const nonMio = await rpc('sospendi_asta', { p_sessione: sid, p_admin_token: 'sbagliato' })
+verifica('sospendere con il token sbagliato e rifiutato', nonMio.ok === false && nonMio.motivo === 'non_autorizzato')
+
+const sosp = await rpc('sospendi_asta', { p_sessione: sid, p_admin_token: admin })
+verifica('sospensione accettata', sosp.ok === true, JSON.stringify(sosp))
+
+let chP = (await db.query('select * from chiamata where sessione_id=$1', [sid])).rows[0]
+verifica('la chiamata passa in pausa', chP.stato === 'paused')
+verifica('la scadenza viene tolta', chP.scadenza === null, String(chP.scadenza))
+// La durata totale e' 5 + 3 + 4 = 12s: sospendendo subito ne restano quasi tutti
+verifica('il tempo rimasto viene messo da parte', chP.rimanenza_ms > 10000 && chP.rimanenza_ms <= 12000, String(chP.rimanenza_ms))
+verifica('il miglior offerente non si perde', chP.miglior_offerente_id === A.id && chP.offerta_attuale === 60)
+
+const sessP = (await db.query('select stato from sessione where id=$1', [sid])).rows[0]
+verifica('anche la sessione risulta sospesa', sessP.stato === 'paused')
+
+console.log('\n== Cosa e vietato mentre e sospesa ==')
+r = await rpc('rilancia', { p_sessione: sid, p_squadra: B.id, p_claim_token: tokB, p_offerta: 100 })
+verifica('rilancio rifiutato, e si capisce perche', r.ok === false && r.motivo === 'asta_sospesa', JSON.stringify(r))
+
+const nuovo = await rpc('metti_all_asta', { ...inAsta, p_giocatore_id: 811, p_nome: 'Altro', p_ruolo: 'D' })
+verifica('non si chiama un altro giocatore: riattiverebbe l asta di nascosto', nuovo.ok === false && nuovo.motivo === 'asta_sospesa', JSON.stringify(nuovo))
+
+const agg = await rpc('aggiudica_se_scaduta', { p_sessione: sid })
+verifica('il conteggio non puo scadere: non c e piu una scadenza', agg.ok === false && agg.motivo === 'nessuna_chiamata')
+
+chP = (await db.query('select * from chiamata where sessione_id=$1', [sid])).rows[0]
+verifica('dopo i rifiuti la chiamata e intatta', chP.stato === 'paused' && chP.offerta_attuale === 60)
+
+console.log('\n== Ripresa ==')
+const ripr = await rpc('riprendi_asta', { p_sessione: sid, p_admin_token: admin })
+verifica('ripresa accettata', ripr.ok === true)
+
+chP = (await db.query('select * from chiamata where sessione_id=$1', [sid])).rows[0]
+verifica('la chiamata torna attiva', chP.stato === 'active')
+verifica('la rimanenza viene consumata', chP.rimanenza_ms === null)
+const restano = new Date(chP.scadenza).getTime() - Date.now()
+verifica('si riparte dal punto in cui ci si era fermati', restano > 9000 && restano <= 12500, `${Math.round(restano)}ms`)
+
+r = await rpc('rilancia', { p_sessione: sid, p_squadra: B.id, p_claim_token: tokB, p_offerta: 100 })
+verifica('dopo la ripresa si rilancia di nuovo', r.ok === true, JSON.stringify(r))
+
+console.log('\n== Pausa a scadenza gia passata ==')
+// Sospendere un istante dopo il martello non deve regalare tempo in piu': alla
+// ripresa il giocatore va aggiudicato subito, com e sarebbe successo senza pausa.
+await db.query("update chiamata set scadenza = now() - interval '1 second' where sessione_id=$1", [sid])
+await rpc('sospendi_asta', { p_sessione: sid, p_admin_token: admin })
+chP = (await db.query('select rimanenza_ms from chiamata where sessione_id=$1', [sid])).rows[0]
+verifica('il tempo rimasto non va sotto zero', chP.rimanenza_ms === 0, String(chP.rimanenza_ms))
+await rpc('riprendi_asta', { p_sessione: sid, p_admin_token: admin })
+const subitoAgg = await rpc('aggiudica_se_scaduta', { p_sessione: sid })
+verifica('alla ripresa il martello cade subito', subitoAgg.ok === true && subitoAgg.squadra_id === B.id, JSON.stringify(subitoAgg))
+
+console.log('\n== Pausa senza nessuna chiamata ==')
+const sospVuota = await rpc('sospendi_asta', { p_sessione: sid, p_admin_token: admin })
+verifica('si puo sospendere anche fra un giocatore e l altro', sospVuota.ok === true && sospVuota.rimanenza_ms === null, JSON.stringify(sospVuota))
+chP = (await db.query('select stato, rimanenza_ms from chiamata where sessione_id=$1', [sid])).rows[0]
+verifica('la chiamata vuota resta idle, non diventa paused', chP.stato === 'idle' && chP.rimanenza_ms === null)
+await rpc('riprendi_asta', { p_sessione: sid, p_admin_token: admin })
+verifica(
+  'e dopo la ripresa si torna a chiamare',
+  (await rpc('metti_all_asta', { ...inAsta, p_giocatore_id: 812, p_nome: 'Ancora', p_ruolo: 'D' })).ok === true,
+)
+await rpc('annulla_chiamata', { p_sessione: sid, p_admin_token: admin })
+
 console.log(`\n${passati} verifiche superate, ${falliti} fallite\n`)
 process.exit(falliti === 0 ? 0 : 1)

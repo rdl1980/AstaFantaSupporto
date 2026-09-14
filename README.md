@@ -25,6 +25,8 @@ Poi apri http://localhost:5173.
      con prezzo suggerito, tuo prezzo massimo e offerta massima possibile.
    - **Rosa**: raggruppata per ruolo; in Mantra i multiruolo appaiono in tutte le loro caselle.
    - **Squadre**: budget residuo, slot e rosa di tutti i partecipanti.
+   - **Pressione**: chi ha fame di quale reparto e quanto può ancora spendere, più l'inflazione
+     dell'asta in corso (vedi sotto).
    - **Obiettivi**: piano di spesa per reparto + lista dei target (vedi sotto).
    - **Scarsità**: quanto vale ancora il mercato e cosa resta per ruolo (vedi sotto).
    - **Annulla ultimo**, **Backup/Ripristina** (JSON) dalla barra in alto.
@@ -213,6 +215,36 @@ errore, distanziando i tentativi, e mentre un giocatore è in asta ogni disposit
 la chiamata una volta al secondo. È una riga sola per otto telefoni, e si paga solo nei minuti in
 cui serve.
 
+### Pausa
+
+Il pulsante **⏸ Pausa** nella barra del banditore ferma tutto: il conteggio si blocca dov'è, le
+offerte vengono rifiutate con un messaggio che dice perché, e sui telefoni compare una fascia
+arancione che non si può non vedere. **▶ Riprendi** riparte dal punto esatto.
+
+Il conteggio non viaggia sulla rete: ogni dispositivo lo ricava dall'istante di scadenza, che è
+assoluto e durante la pausa scorrerebbe via da solo. Perciò il server non si limita a cambiare
+stato — mette da parte quanti millisecondi mancavano al martello e cancella la scadenza. Finché
+l'asta è sospesa non esiste un istante in cui il martello cade, e alla ripresa la scadenza si
+ricostruisce sommando a quel momento il tempo che era rimasto.
+
+Sospendere un attimo *dopo* che il tempo è scaduto non regala secondi in più: il tempo rimasto non
+scende sotto zero, e alla ripresa il giocatore viene aggiudicato subito, com'è giusto. Mentre è
+sospesa non si può nemmeno chiamare un altro giocatore: riattiverebbe l'asta di nascosto, e chi ha
+il telefono in mano non capirebbe cosa è successo.
+
+### Il tono del conteggio
+
+L'altoparlante 🔊 nell'intestazione del telefono accende i suoni: un tono corto su *uno* e *due*,
+uno più grave e lungo sul *tre*, due note che salgono sull'aggiudicazione, e un avviso quando
+**qualcuno supera la tua offerta**. Quest'ultimo è il motivo per cui la funzione esiste: in una
+stanza di otto persone che parlano, chi guarda altrove scopre tardi di essere stato superato.
+
+I suoni sono sintetizzati sul momento, non file da caricare: pochi byte invece di un download che
+potrebbe non essere finito quando serve. Il browser non lascia suonare finché non c'è stato un
+tocco, quindi l'audio si sblocca proprio quando si preme l'interruttore; la preferenza resta salvata
+su quel dispositivo. Si suona sui passaggi di fase, non a ogni ridisegno: senza quella accortezza il
+telefono farebbe un ronzio continuo.
+
 ### Gli acquisti restano allineati nei due sensi
 
 Tutto il resto dell'app — rosa, budget, scarsità, moduli, report, export — legge gli acquisti
@@ -299,6 +331,45 @@ Chi esce e non viene assegnato resta fuori dal mazzo, così non si ripresenta al
 al pulsante si legge quanti ne restano. Quando il mazzo finisce si rimescola con quelli avanzati
 invece di rispondere «finito», perché a metà asta restano quasi solo i giocatori che nessuno aveva
 voluto al primo giro — ed è proprio quelli che bisogna ancora assegnare.
+
+## Pressione e inflazione
+
+La scheda **Pressione** risponde alle due domande che ci si fa mentre un giocatore è in trattativa e
+a cui il resto dell'app non rispondeva.
+
+### Inflazione dell'asta
+
+Un numero solo: quanto la stanza sta pagando sopra o sotto il prezzo suggerito, aggiornato a ogni
+acquisto e visibile anche come indicatore nella barra in alto. Il suggerito nasce dall'FVM ed è una
+misura di **valore**; il **mercato** lo fanno le persone sedute al tavolo. Sapere di quanto si
+discostano serve a ritarare i propri massimi a metà strada, invece di scoprire alla fine di aver
+comprato tutto caro — o di essere rimasti con novecento crediti in mano e la rosa da completare.
+
+Si guarda il rapporto fra totale pagato e totale suggerito, non la media degli scostamenti: un
+portiere da 1 credito pagato 3 triplicherebbe la media pur spostando il mercato di due crediti.
+Sotto gli otto acquisti il numero non compare, perché sarebbe rumore.
+
+Il dato è calcolato anche **per reparto**, perché portieri e attaccanti non si gonfiano allo stesso
+modo. Nella barra di chiamata il suggerito compare così: `547 → 199`, cioè il prezzo a cui quel
+giocatore andrebbe al ritmo di *questa* asta. Si usa lo scostamento del suo reparto quando ha
+abbastanza acquisti alle spalle, altrimenti quello generale; senza né l'uno né l'altro il suggerito
+resta com'è, perché meglio nessuna correzione di una inventata su tre acquisti.
+
+### Chi ha fame di cosa
+
+Una riga per squadra, ordinate per **crediti per slot**: quanto resta a ciascuno per ogni casella
+ancora vuota. È la cifra che separa «ha ottocento crediti» da «deve spenderli»: una squadra con due
+portieri ancora da prendere è costretta, e sul prossimo portiere tirerà; una con la rosa quasi
+completa può stare ferma. Accanto, i reparti ancora scoperti con quanti ne mancano, i residui e il
+massimo su un singolo giocatore.
+
+Chi ha la rosa completa non mostra un valore per slot: i crediti che gli avanzano non comprano più
+niente e non fanno pressione su nessuno. In Mantra i reparti sono portieri e movimento, perché i
+giocatori di movimento non hanno quote per ruolo.
+
+La stessa lettura arriva nella barra di chiamata: gli avversari che devono ancora coprire **quel**
+reparto sono segnati con un pallino e in evidenza, gli altri restano sbiaditi. Non «chi ha crediti»,
+ma chi ha crediti *e* quel buco da riempire — sono quelli che rilanciano davvero.
 
 ## Scarsità
 

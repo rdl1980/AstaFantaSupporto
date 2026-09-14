@@ -9,6 +9,8 @@ import {
   aggiudicaSeScaduta,
   annullaChiamata,
   assegna,
+  riprendiAsta,
+  sospendiAsta,
   creaSessione,
   mettiAllAsta,
   useLive,
@@ -52,6 +54,8 @@ export function LiveAdminPanel({
   useSincronizzaAcquisti(activeAuction.id, cred, live, state, dispatch)
   const chiamata = live.chiamata
   const attiva = chiamata?.stato === 'active' && !!chiamata.scadenza
+  const sospesa = live.sessione?.stato === 'paused'
+  const congelato = chiamata?.stato === 'paused'
   useTick(attiva)
 
   const timer = {
@@ -191,7 +195,31 @@ export function LiveAdminPanel({
         {live.squadre.filter((s) => s.presa).length}/{live.squadre.length} collegati
       </span>
 
-      {attiva ? (
+      {/* La pausa sta qui e non fra i comandi della chiamata: serve anche fra un
+          giocatore e l'altro, che e' quando ci si alza da tavola. */}
+      <button
+        className={`btn small-btn ${sospesa ? 'primary' : 'ghost'}`}
+        onClick={() =>
+          void (sospesa ? riprendiAsta : sospendiAsta)(cred.sessioneId, cred.adminToken).catch((e) =>
+            setErrore(String(e.message)),
+          )
+        }
+        title={sospesa ? "Riprende dal punto esatto in cui si era fermata" : "Ferma il conteggio e blocca le offerte"}
+      >
+        {sospesa ? '▶ Riprendi' : '⏸ Pausa'}
+      </button>
+
+      {sospesa ? (
+        <span className="live-sospesa">
+          ASTA SOSPESA
+          {congelato && (
+            <span className="muted small">
+              {' '}
+              · {chiamata!.giocatore_nome} fermo a {chiamata!.offerta_attuale ?? '—'}
+            </span>
+          )}
+        </span>
+      ) : attiva ? (
         <>
           <span className="live-chiamata">
             <b>{chiamata!.giocatore_nome}</b>{' '}

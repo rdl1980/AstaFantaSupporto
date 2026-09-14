@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { rankAmongRole } from '../analysis'
-import { availableFor, maxBidFor, playerQt, useStore } from '../store'
+import { availableFor, maxBidFor, playerQt, teamStats, useStore } from '../store'
+import { inflazione, ritara } from '../inflazione'
+import { chiHaFameDi, pressione } from '../pressione'
 import { rimuoviAcquisto } from '../live/sync'
 import type { Player } from '../types'
 
@@ -30,6 +32,19 @@ export function CallBar({ player, onClose }: { player: Player; onClose: () => vo
   const priceNum = Number(price)
   const validPrice = Number.isFinite(priceNum) && priceNum >= 1
   const suggested = suggestions.get(player.id) ?? 0
+
+  // Il suggerito nasce dall'FVM, cioe' dal valore. Quello che conta durante la
+  // trattativa e' il mercato, e il mercato lo stanno facendo le persone sedute
+  // al tavolo: se stanno pagando il 18% sopra, quel numero va letto ritarato.
+  const infl = useMemo(() => inflazione(state, suggestions), [state, suggestions])
+  const suggeritoOggi = suggested > 0 ? ritara(suggested, infl, player.r) : 0
+
+  // Chi deve ancora coprire questo reparto: non "chi ha crediti", ma chi ha
+  // crediti *e* quel buco da riempire. Sono quelli che rilanciano davvero.
+  const affamati = useMemo(() => {
+    const righe = pressione(state, (id) => teamStats(state, id))
+    return new Set(chiHaFameDi(righe, player.r, config.mode === 'mantra').map((r) => r.teamId))
+  }, [state, player.r, config.mode])
   const roles = useMemo(() => (config.mode === 'mantra' ? player.rm : [player.r]), [config.mode, player])
   const rank = useMemo(() => rankAmongRole(state, player, roles[0]), [state, player, roles])
 
@@ -83,6 +98,14 @@ export function CallBar({ player, onClose }: { player: Player; onClose: () => vo
           </span>
           <span>
             <span className="muted">Sugg</span> <b className="suggest">{suggested || '—'}</b>
+            {suggeritoOggi > 0 && suggeritoOggi !== suggested && (
+              <>
+                {' → '}
+                <b className="suggest-oggi" title="Il suggerito ritarato sull'inflazione di questa asta">
+                  {suggeritoOggi}
+                </b>
+              </>
+            )}
           </span>
           {target?.maxPrice != null && (
             <span>
@@ -156,15 +179,22 @@ export function CallBar({ player, onClose }: { player: Player; onClose: () => vo
         ) : (
           <span className="muted">Offerta massima degli avversari:</span>
         )}
-        {rivals.map((r) => (
-          <span
-            key={r.team.id}
-            className={`rival ${validPrice && r.max < priceNum ? 'out' : ''}`}
-            title={`${r.team.name} può arrivare a ${r.max}`}
-          >
-            {r.team.name} <b>{r.max}</b>
-          </span>
-        ))}
+        {rivals.map((r) => {
+          const fame = affamati.has(r.team.id)
+          return (
+            <span
+              key={r.team.id}
+              className={`rival ${validPrice && r.max < priceNum ? 'out' : ''} ${fame ? 'fame' : ''}`}
+              title={
+                fame
+                  ? `${r.team.name} deve ancora coprire questo reparto e può arrivare a ${r.max}`
+                  : `${r.team.name} ha il reparto completo, può arrivare a ${r.max}`
+              }
+            >
+              {fame && '●'} {r.team.name} <b>{r.max}</b>
+            </span>
+          )
+        })}
         {overTarget && <span className="warn">⚠ sopra il tuo max ({target!.maxPrice})</span>}
         {overBudget && <span className="error">⚠ oltre i crediti della squadra scelta</span>}
       </div>

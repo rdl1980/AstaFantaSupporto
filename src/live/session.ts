@@ -144,6 +144,30 @@ export async function aggiudicaSeScaduta(sessioneId: string) {
   return data
 }
 
+/**
+ * Sospende l'asta: il conteggio si ferma dov'e'. Il server salva quanto mancava
+ * al martello e cancella la scadenza, perche' durante la pausa un istante
+ * assoluto scorrerebbe via da solo.
+ */
+export async function sospendiAsta(sessioneId: string, adminToken: string) {
+  const { data, error } = await client().rpc('sospendi_asta', {
+    p_sessione: sessioneId,
+    p_admin_token: adminToken,
+  })
+  if (error) throw new Error(error.message)
+  return data
+}
+
+/** Riprende dal punto esatto in cui si era fermata. */
+export async function riprendiAsta(sessioneId: string, adminToken: string) {
+  const { data, error } = await client().rpc('riprendi_asta', {
+    p_sessione: sessioneId,
+    p_admin_token: adminToken,
+  })
+  if (error) throw new Error(error.message)
+  return data
+}
+
 export async function annullaChiamata(sessioneId: string, adminToken: string) {
   const { error } = await client().rpc('annulla_chiamata', {
     p_sessione: sessioneId,

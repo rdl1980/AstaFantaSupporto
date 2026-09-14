@@ -87,5 +87,9 @@ create table if not exists chiamata (
   -- "uno, due, tre" non viene trasmesso: ogni client lo deriva da qui e dalla
   -- configurazione, cosi' tutti vedono la stessa cosa senza bisogno di tick.
   scadenza             timestamptz,
+  -- Millisecondi che mancavano al martello quando si e' sospeso. La scadenza e'
+  -- un istante assoluto e durante la pausa scorrerebbe via: quello da conservare
+  -- e' il tempo rimasto, non il momento in cui sarebbe scaduta.
+  rimanenza_ms         int,
   versione             bigint not null default 0
 );

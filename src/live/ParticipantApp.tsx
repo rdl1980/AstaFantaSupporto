@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { liveDisponibile, oraServer, sincronizzaOrologio } from './client'
 import { conteggio, etichetta } from './countdown'
 import { useEsitoRecente } from './esito'
@@ -6,8 +6,10 @@ import { repartiLive, slotRuoloPieno, statoSquadra } from './derive'
 import { aggiudicaSeScaduta, rilancia, rivendicaSquadra, trovaSessione, useLive } from './session'
 import type { CredenzialiPartecipante, EsitoRilancio, SessioneRow } from './types'
 import { MOTIVO_LEGGIBILE } from './types'
+import { sbloccaAudio, suonaAggiudicato, suonaConteggio, suonaSuperato } from './suono'
 
 const CHIAVE = 'asta-fanta-partecipante-v1'
+const CHIAVE_AUDIO = 'asta-fanta-audio-v1'
 
 function leggiCredenziali(codice: string): CredenzialiPartecipante | null {
   try {
@@ -152,10 +154,22 @@ function Terminale({
   const [offertaLibera, setOffertaLibera] = useState('')
   const [inviando, setInviando] = useState(false)
   const [versioneSbloccata, setVersioneSbloccata] = useState<number | null>(null)
+  const [audio, setAudio] = useState(() => {
+    try {
+      return localStorage.getItem(CHIAVE_AUDIO) !== 'off'
+    } catch {
+      return true
+    }
+  })
   const [vista, setVista] = useState<'asta' | 'rosa' | 'tabellone'>('asta')
 
   const chiamata = live.chiamata
   const attiva = chiamata?.stato === 'active' && !!chiamata.scadenza
+  const sospesa = sessione.stato === 'paused'
+  // Chiamata congelata a meta' conteggio: il server ha messo via quanto mancava
+  // e ha tolto la scadenza, perche' un istante assoluto durante la pausa
+  // scorrerebbe via da solo.
+  const congelato = chiamata?.stato === 'paused' && chiamata.rimanenza_ms != null
   const esitoChiamata = useEsitoRecente(live.chiamata)
   useTick(attiva)
 
@@ -167,13 +181,15 @@ function Terminale({
   const sonoIlMigliore = chiamata?.miglior_offerente_id === cred.squadraId
   const nomeMigliore = live.squadre.find((s) => s.id === chiamata?.miglior_offerente_id)?.nome
 
-  const c = attiva
-    ? conteggio(new Date(chiamata!.scadenza!).getTime(), oraServer(), {
-        attesaSecondi: sessione.attesa_secondi,
-        secondiDa1A2: sessione.secondi_1_2,
-        secondiDa2A3: sessione.secondi_2_3,
-      })
-    : null
+  const tempi = {
+    attesaSecondi: sessione.attesa_secondi,
+    secondiDa1A2: sessione.secondi_1_2,
+    secondiDa2A3: sessione.secondi_2_3,
+  }
+  const c = attiva ? conteggio(new Date(chiamata!.scadenza!).getTime(), oraServer(), tempi) : null
+  // Con scadenza a zero e ora a zero, `rimanenti` e' esattamente il tempo messo
+  // da parte: la fase congelata si legge con la stessa funzione di sempre.
+  const cFermo = congelato ? conteggio(chiamata!.rimanenza_ms!, 0, tempi) : null
 
   // Quando il conteggio finisce, il primo dispositivo che se ne accorge chiude la
   // chiamata. Serve perche' altrimenti l'aggiudicazione dipenderebbe dal browser
@@ -214,6 +230,48 @@ function Terminale({
     const minimo = Math.max(1, sessione.rilancio_minimo)
     return [...new Set(base.map((n) => Math.max(minimo, Math.round(n))))].sort((a, b) => a - b)
   }, [sessione.rilanci_rapidi, sessione.rilancio_minimo])
+
+  // --- tono del conteggio ---------------------------------------------------
+  //
+  // Si suona sui *passaggi* di fase, non a ogni render: la schermata si ridisegna
+  // cinque volte al secondo, e senza questo il telefono farebbe un ronzio.
+  const faseSonora = attiva && c ? (c.fase === 'conteggio' ? `n${c.numero}` : c.fase) : null
+  const faseSuonata = useRef<string | null>(null)
+  useEffect(() => {
+    const prima = faseSuonata.current
+    faseSuonata.current = faseSonora
+    // Al primo giro non si suona nulla: chi apre la pagina a meta' conteggio
+    // non deve sentire un bip a freddo.
+    if (!audio || prima === null || faseSonora === prima) return
+    if (faseSonora === 'n1') suonaConteggio(1)
+    else if (faseSonora === 'n2') suonaConteggio(2)
+    else if (faseSonora === 'scaduta') suonaConteggio(3)
+  }, [faseSonora, audio])
+
+  useEffect(() => {
+    if (audio && esitoChiamata) suonaAggiudicato()
+  }, [audio, esitoChiamata])
+
+  // Essere superati e' la cosa che conviene sentire anche guardando altrove: e'
+  // il motivo per cui il suono esiste.
+  const eroIlMigliore = useRef(false)
+  useEffect(() => {
+    const adesso = chiamata?.miglior_offerente_id === cred.squadraId
+    if (audio && eroIlMigliore.current && !adesso && chiamata?.stato === 'active') suonaSuperato()
+    eroIlMigliore.current = adesso
+  }, [audio, chiamata?.miglior_offerente_id, chiamata?.stato, cred.squadraId])
+
+  async function cambiaAudio() {
+    const acceso = !audio
+    // Sbloccare deve avvenire *dentro* il tocco, altrimenti il browser rifiuta
+    if (acceso) await sbloccaAudio()
+    setAudio(acceso)
+    try {
+      localStorage.setItem(CHIAVE_AUDIO, acceso ? 'on' : 'off')
+    } catch {
+      // Archivio negato: la preferenza vale per questa sessione e basta
+    }
+  }
 
   const prossima = (chiamata?.offerta_attuale ?? 0) + sessione.rilancio_minimo
   const ruoloPieno = chiamata?.ruolo_classic
@@ -273,6 +331,14 @@ function Terminale({
           </div>
         </div>
         <div className="pt-viste">
+          <button
+            className="btn ghost small-btn pt-audio"
+            onClick={() => void cambiaAudio()}
+            title={audio ? 'Tono del conteggio acceso' : 'Tono del conteggio spento'}
+            aria-label={audio ? 'Spegni il tono del conteggio' : 'Accendi il tono del conteggio'}
+          >
+            {audio ? '🔊' : '🔇'}
+          </button>
           <button className="btn ghost small-btn" onClick={() => setVista('rosa')}>
             La mia rosa
           </button>
@@ -299,7 +365,34 @@ function Terminale({
         </div>
       </div>
 
-      {!attiva && esitoChiamata ? (
+      {sospesa && (
+        <div className="pt-sospesa">
+          ⏸ ASTA SOSPESA
+          <span className="small">Il banditore ha messo in pausa</span>
+        </div>
+      )}
+
+      {congelato ? (
+        <div className="pt-chiamata pt-congelato">
+          <div className="pt-giocatore">{chiamata!.giocatore_nome}</div>
+          <div className="muted">
+            {chiamata!.club} · {chiamata!.ruoli_mantra || chiamata!.ruolo_classic}
+          </div>
+          <div className="pt-conteggio fase-fermo">{cFermo ? etichetta(cFermo) : ''}</div>
+          <div className="pt-offerta">
+            <span className="muted small">Offerta attuale</span>
+            <b className="pt-num-grande">{chiamata!.offerta_attuale ?? '—'}</b>
+            <span className={sonoIlMigliore ? 'ok' : 'muted'}>
+              {chiamata!.offerta_attuale == null
+                ? 'nessuna offerta'
+                : sonoIlMigliore
+                  ? '★ sei tu il migliore'
+                  : nomeMigliore}
+            </span>
+          </div>
+          <p className="muted small pt-msg">Il conteggio riparte da qui quando il banditore riprende.</p>
+        </div>
+      ) : !attiva && esitoChiamata ? (
         <div className="pt-chiamata pt-esito">
           <div className="pt-giocatore">{esitoChiamata.giocatore}</div>
           <div className="pt-conteggio fase-scaduta">

@@ -2,6 +2,7 @@
 import { createContext, useContext, useEffect, useMemo, useReducer, useState } from 'react'
 import type { ReactNode } from 'react'
 import { DEFAULT_MODULES_TEXT } from './modules'
+import { budgetTotale, confrontaListoni, creaSvincolo, perditeSvincoli } from './riparazione'
 import type {
   AppState,
   Auction,
@@ -11,10 +12,17 @@ import type {
   Mode,
   Player,
   Purchase,
+  Riparazione,
   Target,
   Vault,
 } from './types'
-import { CLASSIC_ROLE_ORDER, MAX_PARTECIPANTI, MIN_PARTECIPANTI, MODE_LABEL } from './types'
+import {
+  MAX_PARTECIPANTI,
+  MIN_PARTECIPANTI,
+  MODE_LABEL,
+  playerQt,
+  totalSlots,
+} from './types'
 
 const VAULT_KEY = 'asta-fanta-vault-v2'
 /** Chiave della versione a singola asta: letta una volta per migrare, mai riscritta. */
@@ -56,6 +64,11 @@ function squadrePer(count: number, esistenti?: FantaTeam[]): FantaTeam[] {
   return teams
 }
 
+/** Finestra chiusa, nessuno svincolo: il punto di partenza di ogni asta. */
+function riparazioneIniziale(): Riparazione {
+  return { aperta: false, budgetExtra: 0, rimborso: 'prezzo', rimborsoPercento: 50 }
+}
+
 function newId(): string {
   return `a${Date.now().toString(36)}${Math.random().toString(36).slice(2, 7)}`
 }
@@ -67,6 +80,9 @@ export function emptyState(mode: Mode): AppState {
     purchases: [],
     targets: {},
     listoneInfo: null,
+    svincoli: [],
+    riparazione: riparazioneIniziale(),
+    diffListone: null,
   }
 }
 
@@ -97,6 +113,9 @@ function sanitize(state: AppState): AppState {
     config: sanitizeConfig(state.config),
     players: Array.isArray(state.players) ? state.players : [],
     purchases: Array.isArray(state.purchases) ? state.purchases : [],
+    svincoli: Array.isArray(state.svincoli) ? state.svincoli : [],
+    riparazione: { ...riparazioneIniziale(), ...state.riparazione },
+    diffListone: state.diffListone ?? null,
     targets: state.targets ?? {},
     listoneInfo: state.listoneInfo ?? null,
   }
@@ -151,6 +170,11 @@ export type Action =
       items: { playerId: number; maxPrice: number | null; priority: number | null; note: string }[]
     }
   | { type: 'setTarget'; playerId: number; patch: Partial<Target> }
+  | { type: 'setRiparazione'; patch: Partial<Riparazione> }
+  /** Toglie un giocatore dalla rosa restituendo crediti, senza cancellare la cronologia */
+  | { type: 'svincola'; playerId: number; rimborso?: number }
+  /** Rimette in rosa un giocatore svincolato per sbaglio */
+  | { type: 'annullaSvincolo'; playerId: number }
   | { type: 'resetAuction' }
   | { type: 'fullReset' }
   | {
@@ -180,8 +204,17 @@ function appReducer(state: AppState, action: Action): AppState {
   switch (action.type) {
     case 'importPlayers': {
       const ids = new Set(action.players.map((p) => p.id))
+      const perId = new Map(state.players.map((p) => [p.id, p]))
       // Re-import (file definitivo): mantieni acquisti e obiettivi ancora validi
       const purchases = state.purchases.filter((p) => ids.has(p.playerId))
+
+      // Chi non c'e' piu' nel listone ha lasciato la Serie A. Prima veniva tolto
+      // in silenzio, con i suoi crediti che tornavano disponibili senza che
+      // nessuno lo dicesse e senza traccia in cronologia: a settembre non fa
+      // danni, a gennaio e' esattamente il momento in cui succede.
+      const spariti = state.purchases.filter((p) => !ids.has(p.playerId))
+      const forzati = spariti.map((p) => creaSvincolo(state, p, perId.get(p.playerId), true))
+
       const targets = Object.fromEntries(
         Object.entries(state.targets).filter(([id]) => ids.has(Number(id))),
       )
@@ -189,6 +222,10 @@ function appReducer(state: AppState, action: Action): AppState {
         ...state,
         players: action.players,
         purchases,
+        svincoli: [...state.svincoli, ...forzati],
+        // Il confronto si fa qui perche' e' l'unico istante in cui esistono
+        // insieme il listone di prima e quello di adesso.
+        diffListone: confrontaListoni(state.players, action.players, state.purchases, action.fileName),
         targets,
         listoneInfo: { fileName: action.fileName, importedAt: Date.now() },
       }
@@ -281,10 +318,54 @@ function appReducer(state: AppState, action: Action): AppState {
       }
       return { ...state, targets: { ...state.targets, [action.playerId]: { ...existing, ...action.patch } } }
     }
+    case 'setRiparazione':
+      return { ...state, riparazione: { ...state.riparazione, ...action.patch } }
+
+    case 'svincola': {
+      const acquisto = state.purchases.find((p) => p.playerId === action.playerId)
+      if (!acquisto) return state
+      const player = state.players.find((p) => p.id === action.playerId)
+      return {
+        ...state,
+        purchases: state.purchases.filter((p) => p.playerId !== action.playerId),
+        svincoli: [...state.svincoli, creaSvincolo(state, acquisto, player, false, action.rimborso)],
+      }
+    }
+
+    case 'annullaSvincolo': {
+      const svincolo = state.svincoli.find((s) => s.playerId === action.playerId)
+      if (!svincolo) return state
+      // Puo' essere stato ricomprato all'asta di riparazione, anche dalla stessa
+      // squadra: in quel caso lo svincolo e' storia vera e va lasciato dov'e',
+      // altrimenti il giocatore risulterebbe in rosa due volte.
+      if (state.purchases.some((p) => p.playerId === action.playerId)) return state
+      // Torna in rosa con il suo `ts` originale: la cronologia non si scompone
+      const acquisto: Purchase = {
+        playerId: svincolo.playerId,
+        teamId: svincolo.teamId,
+        price: svincolo.price,
+        ts: svincolo.ts,
+      }
+      return {
+        ...state,
+        purchases: [...state.purchases, acquisto],
+        svincoli: state.svincoli.filter((s) => s.playerId !== action.playerId),
+      }
+    }
+
     case 'resetAuction':
-      return { ...state, purchases: [] }
+      return { ...state, purchases: [], svincoli: [], diffListone: null }
     case 'fullReset':
-      return { config: defaultConfig(), players: [], purchases: [], targets: {}, listoneInfo: null }
+      return {
+        config: defaultConfig(),
+        players: [],
+        purchases: [],
+        targets: {},
+        listoneInfo: null,
+        svincoli: [],
+        riparazione: riparazioneIniziale(),
+        diffListone: null,
+      }
     case 'restoreState':
       // Un backup salvato da una versione precedente puo' non avere i campi di
       // config aggiunti dopo: senza questa normalizzazione l'app va in pagina bianca
@@ -316,6 +397,11 @@ function vaultReducer(vault: Vault, action: Action): Vault {
         // Gli obiettivi riferiscono gli id del listone: senza listone non hanno appiglio
         targets: copyListone && action.copyTargets ? src!.state.targets : {},
         listoneInfo: copyListone ? src!.state.listoneInfo : null,
+        // Un'asta nuova non eredita nulla della riparazione: gli svincoli sono
+        // legati a una rosa che qui non c'e'.
+        svincoli: [],
+        riparazione: riparazioneIniziale(),
+        diffListone: null,
       }
       const created = newAuction(action.name.trim() || `Asta ${MODE_LABEL[action.mode]}`, state)
       return { ...vault, activeId: created.id, auctions: [...vault.auctions, created] }
@@ -362,15 +448,10 @@ export function playerFvm(p: Player, mode: Mode): number {
   return mode === 'mantra' ? p.fvmM : p.fvm
 }
 
-export function playerQt(p: Player, mode: Mode): number {
-  return mode === 'mantra' ? p.qtAM : p.qtA
-}
-
-export function totalSlots(config: LeagueConfig): number {
-  return config.mode === 'mantra'
-    ? config.mantraGk + config.mantraOutfield
-    : CLASSIC_ROLE_ORDER.reduce((s, r) => s + config.classicSlots[r], 0)
-}
+// `playerQt` e `totalSlots` vivono in types.ts perche' sono pure e i collaudi
+// devono poterle importare senza tirarsi dietro React. Qui si ri-esportano per
+// non toccare chi le usa gia'.
+export { playerQt, totalSlots }
 
 /**
  * Prezzo suggerito: distribuisce tutti i crediti della lega sul pool dei
@@ -413,7 +494,10 @@ export function teamStats(state: AppState, teamId: string): TeamStats {
   const byId = new Map(state.players.map((p) => [p.id, p]))
   const mine = state.purchases.filter((p) => p.teamId === teamId)
   const spent = mine.reduce((s, p) => s + p.price, 0)
-  const remaining = config.budget - spent
+  // Uno svincolo rimborsato meno di quanto era costato lascia una perdita: quei
+  // crediti non tornano e non comprano piu' niente.
+  const persi = perditeSvincoli(state.svincoli, teamId)
+  const remaining = budgetTotale(state) - spent - persi
   const classicCounts: Record<ClassicRole, number> = { P: 0, D: 0, C: 0, A: 0 }
   let gkCount = 0
   for (const pu of mine) {

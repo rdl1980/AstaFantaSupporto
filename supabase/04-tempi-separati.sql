@@ -19,8 +19,18 @@ begin
   end if;
 end $$;
 
-alter table sessione add constraint sessione_secondi_1_2_check check (secondi_1_2 >= 1);
-alter table sessione add constraint sessione_secondi_2_3_check check (secondi_2_3 >= 1);
+-- Su uno schema creato da 01-schema.sql i due vincoli ci sono gia', con lo stesso
+-- nome che Postgres assegna a un check dichiarato dentro la colonna. Senza questa
+-- guardia rieseguire la migrazione fallisce alla prima riga.
+do $$
+begin
+  if not exists (select 1 from pg_constraint where conname = 'sessione_secondi_1_2_check') then
+    alter table sessione add constraint sessione_secondi_1_2_check check (secondi_1_2 >= 1);
+  end if;
+  if not exists (select 1 from pg_constraint where conname = 'sessione_secondi_2_3_check') then
+    alter table sessione add constraint sessione_secondi_2_3_check check (secondi_2_3 >= 1);
+  end if;
+end $$;
 
 -- Le vecchie versioni delle funzioni restano in giro: Postgres tiene separate le
 -- firme con parametri diversi, e quelle vecchie puntano a una colonna che non

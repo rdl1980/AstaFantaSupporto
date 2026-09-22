@@ -284,6 +284,69 @@ export function SetupScreen({ onDone }: { onDone: () => void }) {
       </section>
 
       <section className="card">
+        <h2>Mercato di riparazione</h2>
+        <p className="muted">
+          Le regole di gennaio. La finestra si apre e si chiude dalla scheda <b>Riparazione</b> nella
+          schermata d&apos;asta; qui si decide come si contano i crediti.
+        </p>
+        <div className="form-row">
+          <label>
+            Budget aggiuntivo
+            <input
+              type="number"
+              min={0}
+              value={state.riparazione.budgetExtra}
+              onChange={(e) =>
+                dispatch({
+                  type: 'setRiparazione',
+                  patch: { budgetExtra: Math.max(0, Number(e.target.value) || 0) },
+                })
+              }
+            />
+          </label>
+          <label>
+            Lo svincolo restituisce
+            <select
+              value={state.riparazione.rimborso}
+              onChange={(e) =>
+                dispatch({
+                  type: 'setRiparazione',
+                  patch: { rimborso: e.target.value as 'prezzo' | 'quotazione' | 'percentuale' },
+                })
+              }
+            >
+              <option value="prezzo">Il prezzo pagato</option>
+              <option value="quotazione">La quotazione di gennaio</option>
+              <option value="percentuale">Una percentuale del prezzo</option>
+            </select>
+          </label>
+          {state.riparazione.rimborso === 'percentuale' && (
+            <label>
+              Percentuale restituita
+              <input
+                type="number"
+                min={0}
+                max={100}
+                value={state.riparazione.rimborsoPercento}
+                onChange={(e) =>
+                  dispatch({
+                    type: 'setRiparazione',
+                    patch: { rimborsoPercento: Math.min(100, Math.max(0, Number(e.target.value) || 0)) },
+                  })
+                }
+              />
+            </label>
+          )}
+        </div>
+        <p className="muted small">
+          Il budget aggiuntivo è uguale per tutte le squadre e conta solo a finestra aperta. Con il
+          rimborso alla <b>quotazione</b> la differenza fra quanto avevi pagato e quanto ti torna è una
+          perdita: resta a carico tuo e non compra più niente. Un giocatore che ha lasciato la Serie A
+          fa eccezione — quello lo rimborsa sempre per intero, perché non l&apos;hai deciso tu.
+        </p>
+      </section>
+
+      <section className="card">
         <h2>Asta a sorteggio</h2>
         <p className="muted">
           Invece di chiamare i giocatori a turno, li estrae l&apos;app: dalla schermata d&apos;asta il

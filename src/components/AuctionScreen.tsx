@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { teamStats, useStore } from '../store'
 import { CAMPIONE_MINIMO, etichettaInflazione, inflazione } from '../inflazione'
 import { PressurePanel } from './PressurePanel'
+import { RepairPanel } from './RepairPanel'
 import type { AppState, ClassicRole, Player } from '../types'
 import { CLASSIC_ROLE_LABEL, CLASSIC_ROLE_ORDER } from '../types'
 import { sorteggia } from '../sorteggio'
@@ -18,7 +19,7 @@ import { PurchaseDialog } from './PurchaseDialog'
 import { ScarcityPanel } from './ScarcityPanel'
 import { TeamsPanel } from './TeamsPanel'
 
-type Tab = 'rosa' | 'squadre' | 'pressione' | 'obiettivi' | 'scarsita' | 'moduli'
+type Tab = 'rosa' | 'squadre' | 'pressione' | 'obiettivi' | 'scarsita' | 'moduli' | 'riparazione'
 
 export function AuctionScreen({
   onSetup,
@@ -253,6 +254,14 @@ export function AuctionScreen({
             <button className={tab === 'scarsita' ? 'active' : ''} onClick={() => setTab('scarsita')}>
               Scarsità
             </button>
+            {/* Compare quando serve: a settembre e' una scheda in piu' che non
+                dice niente, ma appena c'e' un diff da leggere o la finestra e'
+                aperta diventa il posto dove si sta. */}
+            {(state.riparazione.aperta || state.diffListone || state.svincoli.length > 0) && (
+              <button className={tab === 'riparazione' ? 'active' : ''} onClick={() => setTab('riparazione')}>
+                Riparazione
+              </button>
+            )}
             {state.config.mode === 'mantra' && (
               <button className={tab === 'moduli' ? 'active' : ''} onClick={() => setTab('moduli')}>
                 Moduli
@@ -263,6 +272,7 @@ export function AuctionScreen({
             {tab === 'rosa' && <MyRoster onPick={setDialogPlayer} />}
             {tab === 'squadre' && <TeamsPanel onPick={setDialogPlayer} />}
             {tab === 'pressione' && <PressurePanel />}
+            {tab === 'riparazione' && <RepairPanel onPick={pickFromListone} />}
             {tab === 'obiettivi' && <PrepPanel onPick={setDialogPlayer} />}
             {tab === 'scarsita' && <ScarcityPanel onPick={setDialogPlayer} />}
             {tab === 'moduli' && state.config.mode === 'mantra' && <ModulesPanel onPick={setDialogPlayer} />}

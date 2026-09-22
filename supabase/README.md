@@ -32,11 +32,18 @@ ciascuna e nell'ordine, rieseguendo `02-functions.sql` dopo ognuna:
   dopo un cambio di prezzo e l'offerta legata alla versione della chiamata.
 - `06-pausa.sql` — aggiunge la pausa dell'asta: il campo che congela il tempo
   rimasto e le funzioni `sospendi_asta` / `riprendi_asta`.
+- `07-riparazione.sql` — aggiunge la rettifica per squadra, che serve al mercato
+  di gennaio: il budget di sessione è uguale per tutti, ma le perdite degli
+  svincoli sono diverse da squadra a squadra.
 
 Tutte eliminano le firme vecchie delle funzioni: senza quel passaggio Postgres
 continuerebbe a scegliere una versione che cerca colonne non più esistenti.
-`npm run test:sql` collauda anche questo percorso, ricostruendo lo schema com'era
-prima e applicandoci sopra la migrazione due volte di fila.
+`npm run test:sql` collauda anche questo percorso. Non ricostruisce il "prima"
+ritagliando i file di oggi — con cinque migrazioni alle spalle diventa
+equilibrismo sul testo: parte dallo schema attuale, toglie con `drop column` le
+colonne che le migrazioni aggiungono, e pianta le firme storiche come funzioni
+fittizie. Poi applica tutto due volte di fila, perché rieseguire una migrazione
+per sbaglio capita e non deve rompere niente.
 
 La scadenza di una chiamata coincide con il &ldquo;tre&rdquo;: `attesa + (1→2) + (2→3)`.
 Da quell'istante `rilancia` rifiuta le offerte con `chiamata_scaduta`.

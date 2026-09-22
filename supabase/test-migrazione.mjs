@@ -1,22 +1,23 @@
 /**
- * Collaudo della migrazione su un database gia' avviato.
- *
- * Ricostruisce lo schema com'era *prima* dei rilanci rapidi, ci crea sopra una
- * sessione con le funzioni vecchie, poi applica 05 + 02 come farebbe chi ha gia'
- * un progetto Supabase in piedi. Due volte, perche' una migrazione rieseguita
- * per sbaglio non deve rompere nulla.
+ * Collaudo delle migrazioni su un database gia' avviato.
  *
  * Esiste per un guasto vero: dopo la migrazione dei tempi separati, le vecchie
  * firme delle funzioni erano rimaste in giro e Postgres continuava a sceglierle,
- * cercando una colonna che non c'era piu'.
+ * cercando una colonna che non c'era piu'. Da allora ogni migrazione elimina le
+ * firme che sostituisce, e questo file verifica che lo faccia davvero.
+ *
+ * Il "prima" non si ricostruisce ritagliando i file di oggi — con cinque
+ * migrazioni alle spalle diventa un esercizio di equilibrismo sul testo. Si
+ * parte dallo schema attuale, si tolgono con `drop column` le colonne che le
+ * migrazioni aggiungono, e si piantano le firme storiche come funzioni fittizie.
+ * Quello che conta e' che la migrazione trovi un database messo come il tuo.
  *
  *   node supabase/test-migrazione.mjs
  */
 import { readFileSync } from 'fs'
 import { PGlite } from '@electric-sql/pglite'
 
-// Le fine riga di Windows renderebbero fragili i ritagli qui sotto
-const leggi = (f) => readFileSync(new URL(f, import.meta.url), 'utf8').split('\r\n').join('\n')
+const leggi = (f) => readFileSync(new URL(f, import.meta.url), 'utf8')
 
 let passati = 0
 let falliti = 0
@@ -32,103 +33,103 @@ function verifica(descrizione, condizione, dettaglio = '') {
 
 const db = await PGlite.create()
 
-// --- lo schema com'era prima ------------------------------------------------
-const schemaVecchio = leggi('./01-schema.sql')
-  .replace(/  -- scalini del rilancio[\s\S]*?attesa_offerta_ms between 0 and 5000\),\n/, '')
-  .replace(/  -- Millisecondi che mancavano[\s\S]*?rimanenza_ms {9}int,\n/, '')
-if (schemaVecchio.includes('rilanci_rapidi')) throw new Error('ritaglio dello schema fallito')
-if (schemaVecchio.includes('rimanenza_ms')) throw new Error('ritaglio di rimanenza_ms fallito')
-await db.exec(schemaVecchio)
+// --- il database com'era -----------------------------------------------------
+await db.exec(leggi('./01-schema.sql'))
+await db.exec(`
+  alter table sessione drop column rilanci_rapidi, drop column attesa_offerta_ms;
+  alter table chiamata drop column rimanenza_ms;
+  alter table squadra  drop column rettifica;
+`)
 
-const funzioniVecchie = leggi('./02-functions.sql')
-  .replace(",\n  p_rilanci_rapidi int[] default '{1,5,10}', p_attesa_offerta_ms int default 800", '')
-  .replace(',\n  p_rilanci_rapidi int[] default null, p_attesa_offerta_ms int default null', '')
-  .replace(',\n                        rilanci_rapidi, attesa_offerta_ms, stato', ',\n                        stato')
-  .replace(",\n            p_rilanci_rapidi, p_attesa_offerta_ms, 'active'", ", 'active'")
-  .replace(
-    ',\n                      rilanci_rapidi = coalesce(p_rilanci_rapidi, rilanci_rapidi),' +
-      '\n                      attesa_offerta_ms = coalesce(' +
-      '\n                        least(5000, greatest(0, p_attesa_offerta_ms)), attesa_offerta_ms)',
-    '',
-  )
-  .replace(',\n  p_versione_attesa int default null', '')
-  // Anche il controllo dentro al corpo: la funzione "vecchia" non puo' citare un
-  // parametro che non ha piu'.
-  .replace(/\n  -- Un rilancio rapido[\s\S]*?'versione', c\.versione\);\n  end if;\n/, '\n')
-  // 06: la pausa non esisteva. Si taglia via la sezione in fondo e i due
-  // controlli sparsi nel corpo. Sostituzioni di stringa e non espressioni
-  // regolari: qui dentro ci sono parentesi, apici e a capo, e una regex che li
-  // contenga tutti e' piu' facile da sbagliare che da leggere.
-  .replace(`  if c.stato = 'paused' then
-    return jsonb_build_object('ok', false, 'motivo', 'asta_sospesa');
-  end if;
+// Una sessione che esisteva gia', inserita a mano: le funzioni di allora non ci
+// sono piu', e ricrearle servirebbe solo a rimetterle in piedi per buttarle via.
+const sid = (
+  await db.query(`
+    insert into sessione (codice, nome, modalita, budget, slot_config, stato)
+      values ('VECCHI', 'Asta di settembre', 'classic', 4000,
+              '{"slot":{"P":6,"D":8,"C":9,"A":6}}'::jsonb, 'active')
+      returning id`)
+).rows[0].id
+await db.query(`insert into sessione_segreto (sessione_id, admin_token) values ($1, 'tok-admin')`, [sid])
+await db.query(`insert into squadra (sessione_id, nome, ordine) values ($1,'Real Sconcerto',1), ($1,'Gennaro',2)`, [sid])
+await db.query('insert into chiamata (sessione_id) values ($1)', [sid])
+verifica('database ricostruito com era prima delle migrazioni', !!sid)
 
-`, '')
-  .replace(`  if s.stato = 'paused' then
-    return jsonb_build_object('ok', false, 'motivo', 'asta_sospesa');
-  end if;
-`, '')
-  .replace(/, rimanenza_ms = null/g, '')
-  .split('-- ------------------------------------------------------------- pausa')[0]
-if (funzioniVecchie.includes('p_versione_attesa')) throw new Error('ritaglio delle funzioni fallito')
-if (funzioniVecchie.includes('rimanenza_ms') || funzioniVecchie.includes('sospendi_asta'))
-  throw new Error('ritaglio della pausa fallito')
-await db.exec(funzioniVecchie)
-
-const sess = await db.query(
-  `select crea_sessione('Vecchia','classic',4000,'{"slot":{"P":6,"D":8,"C":9,"A":6}}'::jsonb,array['A','B']) as r`,
-)
-const sid = sess.rows[0].r.sessione_id
-const admin = sess.rows[0].r.admin_token
-verifica('sessione creata con le funzioni precedenti', !!sid)
-
-// --- la migrazione, due volte ----------------------------------------------
-for (const giro of [1, 2]) {
-  await db.exec(leggi('./05-rilanci-rapidi.sql'))
-  await db.exec(leggi('./06-pausa.sql'))
-  await db.exec(leggi('./02-functions.sql'))
-  verifica(`migrazioni 05 + 06 + rifacimento 02, giro ${giro}`, true)
+// Le firme storiche, piantate come funzioni fittizie: e' esattamente cio' che
+// le migrazioni devono ripulire.
+const firmeStoriche = [
+  'crea_sessione(text, text, int, jsonb, text[], int, int, int)',
+  'crea_sessione(text, text, int, jsonb, text[], int, int, int, int)',
+  'crea_sessione(text, text, int, jsonb, text[], int, int, int, int, int[], int)',
+  'aggiorna_impostazioni(uuid, text, int, int, int)',
+  'aggiorna_impostazioni(uuid, text, int, int, int, int)',
+  'rilancia(uuid, uuid, text, int)',
+]
+for (const firma of firmeStoriche) {
+  await db.exec(`create function ${firma} returns jsonb language sql as $$ select null::jsonb $$;`)
 }
+verifica(`${firmeStoriche.length} firme vecchie piantate in giro`, true)
+
+// --- le migrazioni, due volte di fila ----------------------------------------
+// Rieseguirle per sbaglio capita: non deve rompere nulla.
+const migrazioni = ['./04-tempi-separati.sql', './05-rilanci-rapidi.sql', './06-pausa.sql', './07-riparazione.sql']
+for (const giro of [1, 2]) {
+  for (const m of migrazioni) await db.exec(leggi(m))
+  await db.exec(leggi('./02-functions.sql'))
+  verifica(`migrazioni ${migrazioni.length} + rifacimento 02, giro ${giro}`, true)
+}
+
+// --- cosa deve risultare -----------------------------------------------------
+const colonne = async (tabella) =>
+  (
+    await db.query('select column_name from information_schema.columns where table_name = $1', [tabella])
+  ).rows.map((r) => r.column_name)
+
+const cs = await colonne('sessione')
+verifica('05: la sessione ha gli scalini e il blocco', cs.includes('rilanci_rapidi') && cs.includes('attesa_offerta_ms'), cs.join(','))
+verifica('06: la chiamata ha il campo che congela', (await colonne('chiamata')).includes('rimanenza_ms'))
+verifica('07: la squadra ha la rettifica', (await colonne('squadra')).includes('rettifica'))
 
 const riga = (await db.query('select rilanci_rapidi, attesa_offerta_ms from sessione where id=$1', [sid])).rows[0]
 verifica(
-  'la sessione preesistente riceve gli scalini predefiniti',
+  'la sessione preesistente riceve i valori predefiniti',
   JSON.stringify(riga.rilanci_rapidi) === '[1,5,10]' && riga.attesa_offerta_ms === 800,
   JSON.stringify(riga),
 )
+const sq = (await db.query('select rettifica from squadra where sessione_id=$1 limit 1', [sid])).rows[0]
+verifica('e le squadre preesistenti una rettifica a zero', sq.rettifica === 0, String(sq.rettifica))
 
-// Il guasto da cui nasce questo file: una firma vecchia rimasta viva accanto
-// alla nuova, con Postgres libero di scegliere quella sbagliata.
-const firme = await db.query(
-  `select proname, count(*)::int c from pg_proc
-     where proname in ('rilancia','crea_sessione','aggiorna_impostazioni')
-     group by proname order by proname`,
-)
-for (const f of firme.rows) {
-  verifica(`una sola firma di ${f.proname}`, f.c === 1, `${f.c} firme`)
-}
-
-const esito = (await db.query(`select rilancia($1::uuid, gen_random_uuid(), 'x', 5, 1) as r`, [sid])).rows[0].r
-verifica('rilancia accetta il parametro versione dopo la migrazione', esito && esito.ok === false, JSON.stringify(esito))
-
-// La 06 aggiunge la pausa: il campo che congela e le due funzioni.
-const colonne = (await db.query(
-  `select column_name from information_schema.columns where table_name = 'chiamata'`,
-)).rows.map((r) => r.column_name)
-verifica('la chiamata guadagna il campo della pausa', colonne.includes('rimanenza_ms'), colonne.join(','))
-
-for (const nome of ['sospendi_asta', 'riprendi_asta']) {
+// Il guasto da cui nasce questo file.
+for (const nome of ['crea_sessione', 'aggiorna_impostazioni', 'rilancia', 'sospendi_asta', 'riprendi_asta']) {
   const n = (await db.query('select count(*)::int c from pg_proc where proname = $1', [nome])).rows[0].c
-  verifica(`${nome} esiste, in una sola firma`, n === 1, String(n))
+  verifica(`una sola firma di ${nome}`, n === 1, `${n} firme`)
 }
 
-// Una sessione creata prima della pausa deve poter essere sospesa lo stesso
-const prova = (await db.query('select sospendi_asta($1::uuid, $2) as r', [sid, admin])).rows[0].r
-verifica('una sessione preesistente si sospende', prova.ok === true, JSON.stringify(prova))
-verifica(
-  'e si riprende',
-  (await db.query('select riprendi_asta($1::uuid, $2) as r', [sid, admin])).rows[0].r.ok === true,
-)
+// --- e le funzioni nuove devono lavorare sui dati vecchi ----------------------
+const esito = (await db.query(`select rilancia($1::uuid, gen_random_uuid(), 'x', 5, 1) as r`, [sid])).rows[0].r
+verifica('rilancia accetta il parametro versione', esito && esito.ok === false, JSON.stringify(esito))
+
+const sosp = (await db.query('select sospendi_asta($1::uuid, $2) as r', [sid, 'tok-admin'])).rows[0].r
+verifica('una sessione preesistente si sospende', sosp.ok === true, JSON.stringify(sosp))
+verifica('e si riprende', (await db.query('select riprendi_asta($1::uuid, $2) as r', [sid, 'tok-admin'])).rows[0].r.ok === true)
+
+// 07: una sessione di riparazione nasce con le rose gia' dentro
+const rip = (
+  await db.query(`
+    select crea_sessione('Riparazione','classic',4500,'{"slot":{"P":6,"D":8,"C":9,"A":6}}'::jsonb,
+      array['A','B'], 1, 5, 3, 3, '{1,5,10}', 800,
+      '[{"ordine":1,"giocatore_id":900,"nome":"Leao","club":"Milan","ruolo":"A","prezzo":200}]'::jsonb,
+      '{-120, 0}') as r`)
+).rows[0].r
+verifica('sessione di riparazione creata', rip.ok === true, JSON.stringify(rip))
+const asg = (await db.query('select * from assegnazione where sessione_id=$1', [rip.sessione_id])).rows
+verifica('la rosa di partenza e dentro', asg.length === 1 && asg[0].giocatore_nome === 'Leao' && asg[0].prezzo === 200, JSON.stringify(asg))
+const rett = (await db.query('select ordine, rettifica from squadra where sessione_id=$1 order by ordine', [rip.sessione_id])).rows
+verifica('le rettifiche finiscono sulla squadra giusta', rett[0].rettifica === -120 && rett[1].rettifica === 0, JSON.stringify(rett))
+
+// budget 4500, rettifica -120, speso 200, restano 28 slot da riempire
+const max = (await db.query('select _offerta_massima($1::uuid, $2::uuid) as m', [rip.sessione_id, asg[0].squadra_id])).rows[0].m
+verifica('l offerta massima tiene conto della rettifica', max === 4500 - 120 - 200 - 27, String(max))
 
 console.log(`\n${passati} verifiche superate, ${falliti} fallite\n`)
 process.exit(falliti === 0 ? 0 : 1)

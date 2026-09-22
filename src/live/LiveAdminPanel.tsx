@@ -16,6 +16,7 @@ import {
   useLive,
 } from './session'
 import { useSincronizzaAcquisti } from './sync'
+import { budgetTotale, perditeSvincoli } from '../riparazione'
 import type { CredenzialiBanditore } from './types'
 
 function useTick(attivo: boolean) {
@@ -126,7 +127,9 @@ export function LiveAdminPanel({
       const r = await creaSessione({
         nome: activeAuction.name,
         modalita: config.mode,
-        budget: config.budget,
+        // Con la riparazione aperta il budget di sessione comprende l'extra di
+        // gennaio: e' uguale per tutti, quindi sta qui e non nelle rettifiche.
+        budget: budgetTotale(state),
         slotConfig,
         squadre: config.teams.map((t) => t.name),
         rilancioMinimo: config.rilancioMinimo,
@@ -135,6 +138,29 @@ export function LiveAdminPanel({
         secondiDa2A3: config.secondiDa2A3,
         rilanciRapidi: config.rilanciRapidi,
         attesaOffertaMs: config.attesaOffertaMs,
+        // A gennaio la sessione non nasce da zero: le rose gia' costruite entrano
+        // subito, cosi' i controlli di slot e di offerta massima leggono la
+        // situazione vera. Le rettifiche portano su le perdite degli svincoli,
+        // che sono diverse da squadra a squadra.
+        ...(state.riparazione.aperta
+          ? {
+              assegnazioni: state.purchases.flatMap((a) => {
+                const ordine = config.teams.findIndex((t) => t.id === a.teamId) + 1
+                const pl = state.players.find((p) => p.id === a.playerId)
+                if (ordine < 1 || !pl) return []
+                return [{
+                  ordine,
+                  giocatore_id: pl.id,
+                  nome: pl.name,
+                  club: pl.team,
+                  ruolo: pl.r,
+                  ruoli_mantra: pl.rm.length ? pl.rm.join(';') : null,
+                  prezzo: a.price,
+                }]
+              }),
+              rettifiche: config.teams.map((t) => -perditeSvincoli(state.svincoli, t.id)),
+            }
+          : {}),
       })
       setCred({ codice: r.codice, sessioneId: r.sessioneId, adminToken: r.adminToken })
       setApri(true)

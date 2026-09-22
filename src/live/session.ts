@@ -27,6 +27,21 @@ export async function creaSessione(args: {
   secondiDa2A3: number
   rilanciRapidi: number[]
   attesaOffertaMs: number
+  /**
+   * Rose gia' costruite, per il mercato di riparazione. Ogni voce punta alla
+   * squadra per `ordine`, perche' gli id delle squadre nascono solo qui dentro.
+   */
+  assegnazioni?: {
+    ordine: number
+    giocatore_id: number
+    nome: string
+    club: string
+    ruolo: string
+    ruoli_mantra: string | null
+    prezzo: number
+  }[]
+  /** Scostamento dal budget, una voce per squadra nell'ordine di `squadre` */
+  rettifiche?: number[]
 }): Promise<{ sessioneId: string; codice: string; adminToken: string }> {
   const { data, error } = await client().rpc('crea_sessione', {
     p_nome: args.nome,
@@ -40,6 +55,8 @@ export async function creaSessione(args: {
     p_secondi_2_3: args.secondiDa2A3,
     p_rilanci_rapidi: args.rilanciRapidi,
     p_attesa_offerta_ms: args.attesaOffertaMs,
+    p_assegnazioni: args.assegnazioni ?? [],
+    p_rettifiche: args.rettifiche ?? null,
   })
   if (error) throw new Error(error.message)
   if (!data?.ok) throw new Error(data?.motivo ?? 'creazione fallita')

@@ -8,7 +8,7 @@
     "build": "tsc -b && vite build",
     "lint": "oxlint",
     "preview": "vite preview",
-    "test": "node supabase/test-funzioni.mjs && node supabase/test-migrazione.mjs && node --experimental-strip-types test/countdown.mjs && node --experimental-strip-types test/sorteggio.mjs && node --experimental-strip-types test/csv-rose.mjs && node --experimental-strip-types test/inflazione.mjs && node --experimental-strip-types test/pressione.mjs",
+    "test": "node supabase/test-funzioni.mjs && node supabase/test-migrazione.mjs && node --experimental-strip-types test/countdown.mjs && node --experimental-strip-types test/sorteggio.mjs && node --experimental-strip-types test/csv-rose.mjs && node --experimental-strip-types test/inflazione.mjs && node --experimental-strip-types test/pressione.mjs && node --experimental-strip-types test/riparazione.mjs",
     "test:sql": "node supabase/test-funzioni.mjs && node supabase/test-migrazione.mjs",
     "test:live": "node --env-file=.env supabase/test-live.mjs"
   },

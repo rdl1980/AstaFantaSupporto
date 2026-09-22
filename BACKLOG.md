@@ -29,6 +29,9 @@ Fatto = presente nell'app; le altre voci non sono ancora implementate.
 - Tono del conteggio sui telefoni, con avviso quando qualcuno ti supera
 - Pressione: chi ha fame di quale reparto e quanto può spendere per slot
 - Inflazione dell'asta in diretta, con il suggerito ritarato sul mercato reale
+- Mercato di riparazione: svincoli con rimborso configurabile, budget aggiuntivo,
+  diff del listone di gennaio, rendimento della rosa e sostituti possibili
+- Sessione live che parte dalle rose gia' costruite
 
 ## Priorità alta
 
@@ -104,17 +107,12 @@ prezzo suggerito nasce da quanto paga *la tua lega*, non dal listino: con 8 squa
 4000 crediti le distorsioni sono sempre le stesse e si ripetono. È l'unica voce che
 vale di più ogni anno che passa.
 
-### 4. Asta di riparazione
-Una seconda fase sulla rosa esistente: svincoli che restituiscono crediti, nuovi
-acquisti, slot da rispettare. Oggi per il mercato di gennaio bisognerebbe ricostruire
-tutto a mano.
-
-### 5. App installabile sul telefono
+### 4. App installabile sul telefono
 Il terminale del partecipante come icona sulla schermata iniziale, con l'ultimo stato
 visibile anche se la linea cade. Toglie di mezzo il «qual era il link?» e la barra del
 browser, che su uno schermo piccolo si mangia lo spazio del conteggio.
 
-### 6. Annulla e ripeti completi
+### 5. Annulla e ripeti completi
 Oggi si annulla solo l'ultimo acquisto. In un'asta confusa capita di accorgersi tre
 chiamate dopo di aver scritto il prezzo sbagliato o la squadra sbagliata, e servirebbe
 tornare indietro di più passi senza rovinare la cronologia.

@@ -45,6 +45,10 @@ create table if not exists squadra (
   ordine      int  not null,
   -- indica solo *se* la squadra e' stata rivendicata: il token sta altrove
   presa       boolean not null default false,
+  -- Scostamento dal budget di sessione, con segno. A gennaio uno svincolo
+  -- rimborsato meno di quanto era costato lascia una perdita che riguarda solo
+  -- chi l'ha subita, mentre il budget della sessione e' uguale per tutti.
+  rettifica   int not null default 0,
   unique (sessione_id, ordine)
 );
 

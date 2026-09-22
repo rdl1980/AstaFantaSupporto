@@ -67,15 +67,20 @@ create or replace function _offerta_massima(p_sessione uuid, p_squadra uuid)
 returns int language plpgsql stable as $$
 declare
   s              sessione%rowtype;
+  v_rettifica    int;
   v_spesi        int;
   v_presi        int;
   v_slot_rimasti int;
 begin
   select * into s from sessione where id = p_sessione;
+  -- La rettifica vale solo per questa squadra: a gennaio due squadre con lo
+  -- stesso budget di sessione possono avere crediti diversi, perche' uno
+  -- svincolo rimborsato meno di quanto era costato lascia una perdita.
+  select coalesce(rettifica, 0) into v_rettifica from squadra where id = p_squadra;
   select coalesce(sum(prezzo), 0), count(*) into v_spesi, v_presi
     from assegnazione where squadra_id = p_squadra;
   v_slot_rimasti := _slot_totali(s.slot_config, s.modalita) - v_presi;
-  return greatest(0, (s.budget - v_spesi) - greatest(0, v_slot_rimasti - 1));
+  return greatest(0, (s.budget + coalesce(v_rettifica, 0) - v_spesi) - greatest(0, v_slot_rimasti - 1));
 end
 $$;
 
@@ -85,13 +90,20 @@ create or replace function crea_sessione(
   p_nome text, p_modalita text, p_budget int, p_slot_config jsonb,
   p_squadre text[], p_rilancio_minimo int default 1,
   p_attesa_secondi int default 5, p_secondi_1_2 int default 3, p_secondi_2_3 int default 3,
-  p_rilanci_rapidi int[] default '{1,5,10}', p_attesa_offerta_ms int default 800
+  p_rilanci_rapidi int[] default '{1,5,10}', p_attesa_offerta_ms int default 800,
+  -- Rose di partenza per il mercato di riparazione. Ogni voce punta alla squadra
+  -- per `ordine`, perche' gli id non esistono ancora quando si chiama questa.
+  p_assegnazioni jsonb default '[]'::jsonb,
+  -- Scostamento dal budget, una voce per squadra nell'ordine in cui arrivano
+  p_rettifiche int[] default null
 ) returns jsonb language plpgsql security definer as $$
 declare
   v_id     uuid;
   v_codice text;
   v_admin  text := _token();
   i        int;
+  v_sq     uuid;
+  a        jsonb;
 begin
   for attempt in 1..10 loop
     v_codice := upper(substr(replace(gen_random_uuid()::text, '-', ''), 1, 6));
@@ -113,7 +125,23 @@ begin
   insert into sessione_segreto (sessione_id, admin_token) values (v_id, v_admin);
 
   for i in 1 .. array_length(p_squadre, 1) loop
-    insert into squadra (sessione_id, nome, ordine) values (v_id, p_squadre[i], i);
+    insert into squadra (sessione_id, nome, ordine, rettifica)
+      values (v_id, p_squadre[i], i, coalesce(p_rettifiche[i], 0));
+  end loop;
+
+  -- Le rose gia' costruite entrano come assegnazioni: cosi' i controlli di slot
+  -- pieno e di offerta massima leggono la situazione vera senza sapere nulla
+  -- del fatto che questa e' una riparazione e non un'asta da zero.
+  for a in select * from jsonb_array_elements(p_assegnazioni) loop
+    select id into v_sq from squadra
+      where sessione_id = v_id and ordine = (a->>'ordine')::int;
+    continue when v_sq is null;
+    insert into assegnazione (sessione_id, squadra_id, giocatore_id, giocatore_nome,
+                              club, ruolo_classic, ruoli_mantra, prezzo)
+      values (v_id, v_sq, (a->>'giocatore_id')::int, a->>'nome',
+              coalesce(a->>'club', ''), a->>'ruolo', a->>'ruoli_mantra',
+              greatest(1, (a->>'prezzo')::int))
+      on conflict (sessione_id, giocatore_id) do nothing;
   end loop;
 
   insert into chiamata (sessione_id) values (v_id);

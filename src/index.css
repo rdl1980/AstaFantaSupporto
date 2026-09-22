@@ -1665,3 +1665,80 @@ tr.won { box-shadow: inset 3px 0 0 var(--green); }
 
 .pressione-mancanti { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
 .pressione-mancanti .badge { margin-right: 2px; }
+
+/* ------------------------------------------ mercato di riparazione ------- */
+
+.riparazione { display: flex; flex-direction: column; gap: 10px; }
+
+/* Il diff del listone e' una notizia, non un pannello: sta in cima, si legge
+   una volta e si chiude. */
+.riparazione-diff { border-color: var(--accent); }
+.riparazione-diff-head { display: flex; justify-content: space-between; align-items: baseline; }
+.riparazione-diff-head h3 { margin: 0; }
+.riparazione-dettagli summary { cursor: pointer; color: var(--muted, #8b97ad); }
+.riparazione-dettagli ul { margin: 6px 0 0; padding-left: 18px; }
+
+.riparazione-stato {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 10px;
+}
+.riparazione-stato h3 { margin: 0 0 2px; }
+
+.riparazione-crediti {
+  display: flex;
+  gap: 18px;
+  flex-wrap: wrap;
+  margin: 10px 0 6px;
+}
+.riparazione-crediti > div { display: flex; flex-direction: column; }
+
+.riparazione-tabella { width: 100%; border-collapse: collapse; }
+.riparazione-tabella th {
+  text-align: left;
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted, #8b97ad);
+  padding: 4px 6px;
+  border-bottom: 1px solid var(--border);
+}
+.riparazione-tabella th.num { text-align: right; }
+.riparazione-tabella td { padding: 5px 6px; border-bottom: 1px solid var(--border-soft, var(--border)); }
+.riparazione-tabella tbody tr { cursor: pointer; }
+.riparazione-tabella tbody tr:hover { background: var(--bg3); }
+.riparazione-tabella tr.scelta { background: var(--bg-hi, var(--bg3)); box-shadow: inset 2px 0 0 var(--accent); }
+
+.riparazione-sostituti,
+.riparazione-svincoli {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.riparazione-sostituti li,
+.riparazione-svincoli li {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 6px;
+  border-bottom: 1px solid var(--border-soft, var(--border));
+}
+/* Chi non ti puoi permettere resta in lista ma spento: serve sapere che esiste,
+   non guardarlo. */
+.riparazione-sostituti li.fuori { opacity: 0.55; }
+
+.link-btn {
+  background: none;
+  border: none;
+  color: inherit;
+  font: inherit;
+  padding: 0;
+  cursor: pointer;
+  text-align: left;
+}
+.link-btn:hover { text-decoration: underline; }

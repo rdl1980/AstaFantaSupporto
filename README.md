@@ -29,6 +29,7 @@ Poi apri http://localhost:5173.
      dell'asta in corso (vedi sotto).
    - **Obiettivi**: piano di spesa per reparto + lista dei target (vedi sotto).
    - **Scarsità**: quanto vale ancora il mercato e cosa resta per ruolo (vedi sotto).
+   - **Riparazione**: svincoli, crediti di gennaio e chi ti sta facendo male (compare quando serve).
    - **Annulla ultimo**, **Backup/Ripristina** (JSON) dalla barra in alto.
    - **🔨 Chiamata**: modalità di trattativa assistita (vedi sotto).
 3. **Report** — analisi di fine asta, export ed elenco cronologico (vedi sotto).
@@ -370,6 +371,68 @@ giocatori di movimento non hanno quote per ruolo.
 La stessa lettura arriva nella barra di chiamata: gli avversari che devono ancora coprire **quel**
 reparto sono segnati con un pallino e in evidenza, gli altri restano sbiaditi. Non «chi ha crediti»,
 ma chi ha crediti *e* quel buco da riempire — sono quelli che rilanciano davvero.
+
+## Mercato di riparazione
+
+L'asta estiva è un problema di **acquisizione**: si parte da zero e si riempiono ventinove caselle.
+Gennaio è un problema di **sostituzione**: la rosa c'è già, e la domanda è quale dei tuoi ti sta
+facendo male e cosa c'è di meglio a quel prezzo. La scheda **Riparazione** compare appena c'è
+qualcosa da dire — un listone reimportato, uno svincolo, o la finestra aperta.
+
+### Il re-import di gennaio
+
+Il file di gennaio non è un aggiornamento di prezzi: arrivano giocatori nuovi, altri lasciano la
+Serie A, altri cambiano squadra. Dopo ogni import la scheda mostra cos'è cambiato.
+
+Chi ha lasciato la Serie A **ed era in una rosa** diventa uno *svincolo forzato*, segnato come tale e
+rimborsato per intero: non l'hai deciso tu, e farti pagare il mercato invernale della Serie A non
+starebbe in piedi. Prima quel giocatore veniva tolto in silenzio: spariva dalla rosa, i suoi crediti
+tornavano disponibili senza che nessuno lo dicesse, e in cronologia non restava traccia. A settembre
+non fa danni — si reimporta prima di comprare — ma a gennaio è esattamente il momento in cui succede.
+
+### Svincoli e crediti
+
+Uno svincolo **non cancella l'acquisto**: lo sposta fra gli svincolati, con il prezzo pagato, i
+crediti resi e la data. Un acquisto sparito dalla cronologia la renderebbe una bugia, e il report di
+fine anno deve poter mostrare tutte e due le fasi.
+
+Dal Setup si sceglie quanto restituisce uno svincolo — il prezzo pagato, la quotazione di gennaio, o
+una percentuale — e quanto budget aggiuntivo entra in gioco, uguale per tutte le squadre. I crediti
+seguono una formula sola:
+
+```
+residui = budget + budgetAggiuntivo − Σ prezzo(in rosa) − Σ (prezzo − rimborso)(svincolati)
+```
+
+Con il rimborso al prezzo pagato l'ultimo termine è zero. Con il rimborso alla quotazione, la
+differenza è quanto ci hai rimesso: quei crediti non tornano e non comprano più niente.
+
+### Chi ti sta facendo male
+
+La rosa ordinata dal peggior affare al migliore. Il confronto **non** può essere fra prezzo e
+quotazione: sono scale diverse, e un giocatore pagato 200 e quotato 25 è normale, non un disastro.
+La colonna *Vale oggi* converte la quotazione in crediti usando il cambio che **questa lega** ha
+praticato — la somma dei prezzi pagati divisa per la somma delle quotazioni — e lo scarto dice quanto
+stai perdendo o guadagnando su quel giocatore.
+
+Come per l'inflazione dell'asta si usa il rapporto fra totali e non la media dei rapporti: un
+giocatore da un credito distorcerebbe la media senza spostare il mercato di nulla.
+
+Scegliendo un giocatore compaiono i liberi dello stesso reparto, con il costo stimato allo stesso
+cambio e quanto guadagni o perdi in quotazione. Il vincolo mostrato non è «quanto ho in cassa» ma
+**quanto avrei dopo averlo svincolato**: sono due cifre diverse, ed è la seconda che decide lo
+scambio. In lista ci sono anche i giocatori più deboli di lui, di proposito: dopo uno svincolo
+forzato quello slot va riempito comunque, e «non c'è nessuno meglio di lui» non è una risposta.
+
+### L'asta di gennaio
+
+La sessione live funziona come d'estate, ma non nasce da zero: le rose già costruite entrano subito
+come assegnazioni, così i controlli di slot pieno e di offerta massima leggono la situazione vera. Il
+budget di sessione comprende l'extra di gennaio, che è uguale per tutti; le perdite degli svincoli,
+che sono diverse da squadra a squadra, viaggiano come una **rettifica** sulla singola squadra.
+
+Finché la rosa non torna valida un avviso dice cosa manca. Durante la riparazione si svincola prima e
+si compra dopo, quindi per un po' è per forza incompleta: serve a non dimenticarsene.
 
 ## Scarsità
 

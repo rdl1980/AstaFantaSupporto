@@ -35,6 +35,9 @@ ciascuna e nell'ordine, rieseguendo `02-functions.sql` dopo ognuna:
 - `07-riparazione.sql` — aggiunge la rettifica per squadra, che serve al mercato
   di gennaio: il budget di sessione è uguale per tutti, ma le perdite degli
   svincoli sono diverse da squadra a squadra.
+- `08-turno.sql` — aggiunge il turno di chiamata: la colonna `turno` sulla
+  sessione e le funzioni `imposta_turno` / `passa_turno`. Una sessione che
+  esisteva già resta senza giro, con `turno` a null.
 
 Tutte eliminano le firme vecchie delle funzioni: senza quel passaggio Postgres
 continuerebbe a scegliere una versione che cerca colonne non più esistenti.

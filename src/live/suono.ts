@@ -67,6 +67,17 @@ export function suonaAggiudicato(): void {
   nota(990, 260, 130)
 }
 
+/**
+ * Tre note che salgono: tocca a te chiamare. Piu' lunghe del conteggio e in
+ * ordine diverso dall'aggiudicazione, perche' nel rumore della stanza si
+ * riconosce la forma, non la singola nota.
+ */
+export function suonaTurno(): void {
+  nota(600, 110)
+  nota(760, 110, 120)
+  nota(920, 220, 240)
+}
+
 /** Avviso breve quando qualcuno supera la tua offerta. */
 export function suonaSuperato(): void {
   nota(520, 90)

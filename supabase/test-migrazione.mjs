@@ -36,7 +36,7 @@ const db = await PGlite.create()
 // --- il database com'era -----------------------------------------------------
 await db.exec(leggi('./01-schema.sql'))
 await db.exec(`
-  alter table sessione drop column rilanci_rapidi, drop column attesa_offerta_ms;
+  alter table sessione drop column rilanci_rapidi, drop column attesa_offerta_ms, drop column turno;
   alter table chiamata drop column rimanenza_ms;
   alter table squadra  drop column rettifica;
 `)
@@ -61,6 +61,7 @@ const firmeStoriche = [
   'crea_sessione(text, text, int, jsonb, text[], int, int, int)',
   'crea_sessione(text, text, int, jsonb, text[], int, int, int, int)',
   'crea_sessione(text, text, int, jsonb, text[], int, int, int, int, int[], int)',
+  'crea_sessione(text, text, int, jsonb, text[], int, int, int, int, int[], int, jsonb, int[])',
   'aggiorna_impostazioni(uuid, text, int, int, int)',
   'aggiorna_impostazioni(uuid, text, int, int, int, int)',
   'rilancia(uuid, uuid, text, int)',
@@ -72,7 +73,13 @@ verifica(`${firmeStoriche.length} firme vecchie piantate in giro`, true)
 
 // --- le migrazioni, due volte di fila ----------------------------------------
 // Rieseguirle per sbaglio capita: non deve rompere nulla.
-const migrazioni = ['./04-tempi-separati.sql', './05-rilanci-rapidi.sql', './06-pausa.sql', './07-riparazione.sql']
+const migrazioni = [
+  './04-tempi-separati.sql',
+  './05-rilanci-rapidi.sql',
+  './06-pausa.sql',
+  './07-riparazione.sql',
+  './08-turno.sql',
+]
 for (const giro of [1, 2]) {
   for (const m of migrazioni) await db.exec(leggi(m))
   await db.exec(leggi('./02-functions.sql'))
@@ -89,6 +96,7 @@ const cs = await colonne('sessione')
 verifica('05: la sessione ha gli scalini e il blocco', cs.includes('rilanci_rapidi') && cs.includes('attesa_offerta_ms'), cs.join(','))
 verifica('06: la chiamata ha il campo che congela', (await colonne('chiamata')).includes('rimanenza_ms'))
 verifica('07: la squadra ha la rettifica', (await colonne('squadra')).includes('rettifica'))
+verifica('08: la sessione ha il turno di chiamata', cs.includes('turno'), cs.join(','))
 
 const riga = (await db.query('select rilanci_rapidi, attesa_offerta_ms from sessione where id=$1', [sid])).rows[0]
 verifica(
@@ -99,8 +107,19 @@ verifica(
 const sq = (await db.query('select rettifica from squadra where sessione_id=$1 limit 1', [sid])).rows[0]
 verifica('e le squadre preesistenti una rettifica a zero', sq.rettifica === 0, String(sq.rettifica))
 
+// Chi stava giocando senza giro non deve ritrovarsi un turno acceso a meta' asta
+const turnoVecchio = (await db.query('select turno from sessione where id=$1', [sid])).rows[0]
+verifica('una sessione preesistente non si accende il turno da sola', turnoVecchio.turno === null, String(turnoVecchio.turno))
+verifica(
+  'e il banditore puo accenderlo quando serve',
+  (await db.query('select imposta_turno($1::uuid, $2, 2) as r', [sid, 'tok-admin'])).rows[0].r.turno === 2,
+)
+
 // Il guasto da cui nasce questo file.
-for (const nome of ['crea_sessione', 'aggiorna_impostazioni', 'rilancia', 'sospendi_asta', 'riprendi_asta']) {
+for (const nome of [
+  'crea_sessione', 'aggiorna_impostazioni', 'rilancia', 'sospendi_asta', 'riprendi_asta',
+  'imposta_turno', 'passa_turno',
+]) {
   const n = (await db.query('select count(*)::int c from pg_proc where proname = $1', [nome])).rows[0].c
   verifica(`una sola firma di ${nome}`, n === 1, `${n} firme`)
 }

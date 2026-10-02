@@ -405,5 +405,98 @@ verifica(
 )
 await rpc('annulla_chiamata', { p_sessione: sid, p_admin_token: admin })
 
+
+// ------------------------------------------------------- turno di chiamata --
+//
+// Molte leghe chiamano a giro. Il segnalino sta sul server perche' tutti i
+// telefoni devono leggere lo stesso nome; qui si fissa come si muove.
+console.log('\n== Turno di chiamata ==')
+const gt = await rpc('crea_sessione', {
+  p_nome: 'Asta a giro', p_modalita: 'classic', p_budget: 500,
+  // due slot per squadra: una rosa si completa in fretta, e il giro deve saltarla
+  p_slot_config: JSON.stringify({ slot: { P: 1, D: 1, C: 0, A: 0 } }),
+  p_squadre: ['Primo', 'Secondo', 'Terzo'],
+  p_turno: 1,
+})
+const gsid = gt.sessione_id
+const gadmin = gt.admin_token
+const gsq = (await db.query('select id, ordine from squadra where sessione_id=$1 order by ordine', [gsid])).rows
+const turnoDi = async () => (await call('select turno from sessione where id=$1', [gsid])).turno
+
+verifica('il giro parte dalla squadra indicata alla creazione', (await turnoDi()) === 1, String(await turnoDi()))
+verifica('senza giro il turno resta spento', (await call('select turno from sessione where id=$1', [sid])).turno === null)
+
+console.log('\n== Il banditore muove il segnalino a mano ==')
+verifica('imposta_turno con token sbagliato rifiutato',
+  (await rpc('imposta_turno', { p_sessione: gsid, p_admin_token: 'x', p_ordine: 2 })).motivo === 'non_autorizzato')
+verifica('una squadra che non esiste non puo avere il turno',
+  (await rpc('imposta_turno', { p_sessione: gsid, p_admin_token: gadmin, p_ordine: 99 })).motivo === 'squadra_inesistente')
+verifica('passa_turno porta al successivo',
+  (await rpc('passa_turno', { p_sessione: gsid, p_admin_token: gadmin })).turno === 2)
+verifica('e poi al terzo',
+  (await rpc('passa_turno', { p_sessione: gsid, p_admin_token: gadmin })).turno === 3)
+verifica('dopo l ultimo si ricomincia dal primo: e un giro',
+  (await rpc('passa_turno', { p_sessione: gsid, p_admin_token: gadmin })).turno === 1)
+verifica('dove non si chiama a giro non c e niente da passare',
+  (await rpc('passa_turno', { p_sessione: sid, p_admin_token: admin })).motivo === 'turno_spento')
+
+console.log('\n== Una chiamata chiusa consuma il turno ==')
+const gTok2 = (await rpc('rivendica_squadra', { p_squadra: gsq[1].id })).claim_token
+await rpc('metti_all_asta', {
+  p_sessione: gsid, p_admin_token: gadmin, p_giocatore_id: 1000,
+  p_nome: 'Portierone', p_club: 'X', p_ruolo: 'P', p_ruoli_mantra: 'Por', p_base: 0,
+})
+await rpc('rilancia', { p_sessione: gsid, p_squadra: gsq[1].id, p_claim_token: gTok2, p_offerta: 10 })
+const gAss = await rpc('assegna', { p_sessione: gsid, p_admin_token: gadmin })
+verifica('aggiudicato al secondo, che aveva offerto', gAss.ok === true && gAss.squadra_id === gsq[1].id)
+verifica('il turno avanza da chi aveva chiamato, non da chi ha vinto', (await turnoDi()) === 2, String(await turnoDi()))
+
+console.log('\n== Chi ha la rosa completa non chiama piu ==')
+// Il secondo ha gia' il portiere: con un difensore ha finito i suoi due slot
+await rpc('pubblica_assegnazione', {
+  p_sessione: gsid, p_admin_token: gadmin, p_squadra: gsq[1].id,
+  p_giocatore_id: 1001, p_nome: 'Difensore', p_club: 'X', p_ruolo: 'D',
+  p_ruoli_mantra: null, p_prezzo: 1,
+})
+await rpc('imposta_turno', { p_sessione: gsid, p_admin_token: gadmin, p_ordine: 1 })
+verifica('il giro salta la squadra con la rosa piena',
+  (await rpc('passa_turno', { p_sessione: gsid, p_admin_token: gadmin })).turno === 3,
+  String(await turnoDi()))
+
+console.log('\n== Una chiamata senza offerte spende il turno comunque ==')
+await rpc('metti_all_asta', {
+  p_sessione: gsid, p_admin_token: gadmin, p_giocatore_id: 1002,
+  p_nome: 'Nessuno lo vuole', p_club: 'X', p_ruolo: 'D', p_ruoli_mantra: null, p_base: 0,
+})
+await db.query("update chiamata set scadenza = now() - interval '1 second' where sessione_id=$1", [gsid])
+const gVuota = await rpc('aggiudica_se_scaduta', { p_sessione: gsid })
+verifica('la chiamata si chiude senza assegnare niente', gVuota.ok === true && gVuota.squadra_id === null, JSON.stringify(gVuota))
+verifica('e il turno passa al primo, saltando il secondo pieno', (await turnoDi()) === 1, String(await turnoDi()))
+
+console.log('\n== Annullare una chiamata non consuma il turno ==')
+await rpc('imposta_turno', { p_sessione: gsid, p_admin_token: gadmin, p_ordine: 1 })
+await rpc('metti_all_asta', {
+  p_sessione: gsid, p_admin_token: gadmin, p_giocatore_id: 1003,
+  p_nome: 'Nome storto', p_club: 'X', p_ruolo: 'D', p_ruoli_mantra: null, p_base: 0,
+})
+await rpc('annulla_chiamata', { p_sessione: gsid, p_admin_token: gadmin })
+verifica('chi non ha ancora chiamato per davvero non perde il turno', (await turnoDi()) === 1, String(await turnoDi()))
+
+console.log('\n== Con tutte le rose complete il giro si ferma ==')
+for (const [i, sqRiga] of [gsq[0], gsq[2]].entries()) {
+  for (const [j, ruolo] of ['P', 'D'].entries()) {
+    await rpc('pubblica_assegnazione', {
+      p_sessione: gsid, p_admin_token: gadmin, p_squadra: sqRiga.id,
+      p_giocatore_id: 1100 + i * 10 + j, p_nome: `Tappo${i}${j}`, p_club: 'X',
+      p_ruolo: ruolo, p_ruoli_mantra: null, p_prezzo: 1,
+    })
+  }
+}
+const gFermo = await rpc('passa_turno', { p_sessione: gsid, p_admin_token: gadmin })
+verifica('il segnalino resta dov era invece di girare a vuoto', gFermo.ok === true && gFermo.turno === 1, JSON.stringify(gFermo))
+verifica('e si puo sempre spegnere il giro',
+  (await rpc('imposta_turno', { p_sessione: gsid, p_admin_token: gadmin, p_ordine: null })).ok === true &&
+    (await turnoDi()) === null)
+
 console.log(`\n${passati} verifiche superate, ${falliti} fallite\n`)
 process.exit(falliti === 0 ? 0 : 1)

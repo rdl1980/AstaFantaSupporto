@@ -1,6 +1,7 @@
 /* eslint-disable react-refresh/only-export-components */
 import { createContext, useContext, useEffect, useMemo, useReducer, useState } from 'react'
 import type { ReactNode } from 'react'
+import { fondiAcquisti } from './csvRose'
 import { DEFAULT_MODULES_TEXT } from './modules'
 import { budgetTotale, confrontaListoni, creaSvincolo, perditeSvincoli } from './riparazione'
 import type {
@@ -47,6 +48,7 @@ export function defaultConfig(): LeagueConfig {
     rilanciRapidi: [1, 5, 10],
     attesaOffertaMs: 800,
     sorteggioAmbito: 'tutti',
+    turnoChiamata: false,
   }
 }
 
@@ -170,6 +172,13 @@ export type Action =
       items: { playerId: number; maxPrice: number | null; priority: number | null; note: string }[]
     }
   | { type: 'setTarget'; playerId: number; patch: Partial<Target> }
+  | {
+      /** Rose lette da un CSV: si parte da una situazione invece che dal vuoto */
+      type: 'importRose'
+      items: { playerId: number; teamId: string; price: number }[]
+      /** true: le rose del file prendono il posto di quelle presenti */
+      sostituisci: boolean
+    }
   | { type: 'setRiparazione'; patch: Partial<Riparazione> }
   /** Toglie un giocatore dalla rosa restituendo crediti, senza cancellare la cronologia */
   | { type: 'svincola'; playerId: number; rimborso?: number }
@@ -318,6 +327,27 @@ function appReducer(state: AppState, action: Action): AppState {
       }
       return { ...state, targets: { ...state.targets, [action.playerId]: { ...existing, ...action.patch } } }
     }
+    case 'importRose': {
+      // Gli acquisti di un file non hanno un orario vero. Se ne da' loro uno
+      // crescente nell'ordine in cui stanno scritti: la cronologia resta
+      // leggibile e "annulla ultimo" torna indietro dall'ultima riga, non da
+      // una qualsiasi.
+      const base = Date.now()
+      const importati: Purchase[] = action.items.map((a, i) => ({
+        playerId: a.playerId,
+        teamId: a.teamId,
+        price: Math.max(1, Math.round(a.price)),
+        ts: base + i,
+      }))
+      const purchases = fondiAcquisti(state.purchases, importati, action.sostituisci)
+      // Con le rose sostituite vanno via anche gli svincoli: parlano di acquisti
+      // che non esistono piu', e le loro perdite continuerebbero a togliere
+      // crediti a rose nuove.
+      return action.sostituisci
+        ? { ...state, purchases, svincoli: [] }
+        : { ...state, purchases }
+    }
+
     case 'setRiparazione':
       return { ...state, riparazione: { ...state.riparazione, ...action.patch } }
 

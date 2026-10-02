@@ -1,4 +1,4 @@
-import type { AssegnazioneRow, SessioneRow } from './types'
+import type { AssegnazioneRow, SessioneRow, SquadraRow } from './types'
 
 /**
  * Ricalcola lato client le stesse quantità che il server verifica in
@@ -117,4 +117,19 @@ export function repartiLive(
   return (['P', 'D', 'C', 'A'] as const).map((r) =>
     riga(r, etichette[r], conta((a) => a.ruolo_classic === r), cfg.slot?.[r] ?? 0),
   )
+}
+
+/**
+ * La squadra che deve chiamare adesso, o null se la lega non chiama a giro.
+ *
+ * Il turno e' un `ordine`, non un id: alla creazione della sessione gli id delle
+ * squadre non esistono ancora, e l'ordine e' l'unica cosa che il banditore puo'
+ * indicare prima che nascano.
+ */
+export function squadraDiTurno(
+  squadre: SquadraRow[],
+  turno: number | null | undefined,
+): SquadraRow | null {
+  if (turno == null) return null
+  return squadre.find((s) => s.ordine === turno) ?? null
 }

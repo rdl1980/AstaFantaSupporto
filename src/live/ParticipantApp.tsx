@@ -2,11 +2,11 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { liveDisponibile, oraServer, sincronizzaOrologio } from './client'
 import { conteggio, etichetta } from './countdown'
 import { useEsitoRecente } from './esito'
-import { repartiLive, slotRuoloPieno, statoSquadra } from './derive'
+import { repartiLive, slotRuoloPieno, squadraDiTurno, statoSquadra } from './derive'
 import { aggiudicaSeScaduta, rilancia, rivendicaSquadra, trovaSessione, useLive } from './session'
 import type { CredenzialiPartecipante, EsitoRilancio, SessioneRow } from './types'
 import { MOTIVO_LEGGIBILE } from './types'
-import { sbloccaAudio, suonaAggiudicato, suonaConteggio, suonaSuperato } from './suono'
+import { sbloccaAudio, suonaAggiudicato, suonaConteggio, suonaSuperato, suonaTurno } from './suono'
 
 const CHIAVE = 'asta-fanta-partecipante-v1'
 const CHIAVE_AUDIO = 'asta-fanta-audio-v1'
@@ -178,6 +178,10 @@ function Terminale({
     [sessione, live.assegnazioni, cred.squadraId],
   )
   const nomeSquadra = live.squadre.find((s) => s.id === cred.squadraId)?.nome ?? 'La mia squadra'
+  // Chi deve chiamare: lo decide il server, cosi' tutti i telefoni dicono lo
+  // stesso nome e non si discute su dove fosse arrivato il giro.
+  const diTurno = squadraDiTurno(live.squadre, sessione.turno)
+  const mioTurno = diTurno?.id === cred.squadraId
   const sonoIlMigliore = chiamata?.miglior_offerente_id === cred.squadraId
   const nomeMigliore = live.squadre.find((s) => s.id === chiamata?.miglior_offerente_id)?.nome
 
@@ -251,6 +255,17 @@ function Terminale({
   useEffect(() => {
     if (audio && esitoChiamata) suonaAggiudicato()
   }, [audio, esitoChiamata])
+
+  // Il proprio turno e' l'altra cosa che si scopre tardi: in otto al tavolo, chi
+  // sta guardando la rosa non si accorge che il giro e' arrivato a lui.
+  const eraMioTurno = useRef<boolean | null>(null)
+  useEffect(() => {
+    const prima = eraMioTurno.current
+    eraMioTurno.current = mioTurno
+    // Al primo giro non si suona: chi apre la pagina mentre tocca a lui lo vede
+    // scritto, e un bip a freddo sembra un guasto.
+    if (audio && prima === false && mioTurno) suonaTurno()
+  }, [audio, mioTurno])
 
   // Essere superati e' la cosa che conviene sentire anche guardando altrove: e'
   // il motivo per cui il suono esiste.
@@ -364,6 +379,21 @@ function Terminale({
           </b>
         </div>
       </div>
+
+      {diTurno && (
+        <div className={`pt-turno ${mioTurno ? 'mio' : ''}`}>
+          {mioTurno ? (
+            <>
+              🔔 TOCCA A TE CHIAMARE
+              <span className="small">Di&apos; il nome del giocatore al banditore</span>
+            </>
+          ) : (
+            <>
+              Chiama <b>{diTurno.nome}</b>
+            </>
+          )}
+        </div>
+      )}
 
       {sospesa && (
         <div className="pt-sospesa">

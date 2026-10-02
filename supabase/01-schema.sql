@@ -26,6 +26,11 @@ create table if not exists sessione (
                      check (attesa_offerta_ms between 0 and 5000),
   stato              text not null default 'idle'
                      check (stato in ('idle', 'active', 'paused', 'closed')),
+  -- `ordine` della squadra che deve chiamare adesso, null se la lega non chiama
+  -- a giro. Sta qui e non sui dispositivi perche' tutti devono leggere lo stesso
+  -- nome: un turno calcolato in locale si sfalda appena un telefono perde un
+  -- messaggio.
+  turno              int,
   creata_il          timestamptz not null default now()
 );
 

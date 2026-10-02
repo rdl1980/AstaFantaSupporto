@@ -15,6 +15,8 @@ export interface SessioneRow {
   rilanci_rapidi: number[]
   /** Blocco dei pulsanti dopo un cambio di prezzo, in millisecondi */
   attesa_offerta_ms: number
+  /** `ordine` della squadra che deve chiamare, null se non si chiama a giro */
+  turno: number | null
   stato: 'idle' | 'active' | 'paused' | 'closed'
 }
 

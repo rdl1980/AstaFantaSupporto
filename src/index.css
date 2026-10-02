@@ -1166,6 +1166,21 @@ td.status { font-size: 12px; white-space: nowrap; }
 
 .live-azioni-extra { display: flex; gap: 6px; flex-wrap: wrap; margin: 4px 0; }
 
+/* Chi deve chiamare: in una barra piena di numeri serve un colore proprio,
+   altrimenti si perde fra il codice stanza e il conteggio. */
+.live-turno {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  border: 1px solid var(--gold);
+  background: rgba(245, 197, 66, 0.1);
+  white-space: nowrap;
+}
+
+.live-turno-scelta { display: inline-flex; align-items: center; gap: 6px; }
+
 /* ---------- terminale del partecipante (mobile-first) ---------- */
 .pt {
   display: flex;
@@ -1602,6 +1617,35 @@ tr.won { box-shadow: inset 3px 0 0 var(--green); }
 }
 
 .pt-sospesa .small { font-weight: 400; letter-spacing: 0; opacity: 0.85; }
+
+/* Il turno sta sopra tutto il resto perche' e' l'unica cosa che richiede
+   un'azione fuori dallo schermo: parlare. Quando tocca a te cambia colore e si
+   fa grande, cosi' si vede con il telefono sul tavolo. */
+.pt-turno {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 8px 10px;
+  border-radius: var(--r-md, 10px);
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  color: var(--muted);
+}
+
+.pt-turno b { color: var(--text); }
+
+.pt-turno.mio {
+  background: color-mix(in srgb, var(--gold) 20%, var(--bg2));
+  border-color: var(--gold);
+  color: var(--gold);
+  font-weight: 800;
+  font-size: 17px;
+  letter-spacing: 0.06em;
+  animation: battito 1.4s ease-in-out infinite;
+}
+
+.pt-turno .small { font-weight: 400; letter-spacing: 0; opacity: 0.85; }
 
 /* Il conteggio fermo resta leggibile ma spento: si vede dov'era senza sembrare
    che stia ancora scorrendo. */

@@ -1,4 +1,4 @@
-import { rosterCsv } from '../src/csvRose.ts'
+import { abbinaRose, fondiAcquisti, leggiRoseCsv, rosterCsv } from '../src/csvRose.ts'
 
 let ok = 0
 let ko = 0
@@ -70,6 +70,81 @@ const fuoriListone = rosterCsv({
 v('un acquisto senza giocatore nel listone viene saltato', fuoriListone === '', JSON.stringify(fuoriListone))
 
 v('senza acquisti il file e vuoto, non un separatore solo', rosterCsv({ ...stato, purchases: [] }) === '')
+
+console.log('\n== Lettura: lo stesso file, al contrario ==')
+const letto = leggiRoseCsv(csv)
+v('ritrova tutte le righe scritte', letto.righe.length === 5, String(letto.righe.length))
+v('ritrova le due squadre con acquisti', letto.nomiSquadra.join('|') === 'Rosario|Gennaro', letto.nomiSquadra.join('|'))
+v('i separatori non sono righe ignorate', letto.ignorate === 0, String(letto.ignorate))
+
+const andataRitorno = abbinaRose(letto, stato)
+v('ogni acquisto torna alla sua squadra e al suo prezzo',
+  JSON.stringify([...andataRitorno.acquisti].sort((a, b) => a.playerId - b.playerId)) ===
+    JSON.stringify([...stato.purchases].map(({ playerId, teamId, price }) => ({ playerId, teamId, price })).sort((a, b) => a.playerId - b.playerId)),
+  JSON.stringify(andataRitorno.acquisti))
+v('niente da segnalare su un file scritto da qui',
+  andataRitorno.squadreIgnote.length === 0 && andataRitorno.fuoriListone.length === 0 && andataRitorno.doppioni.length === 0)
+
+console.log('\n== File che arrivano da altrove ==')
+const sporco = leggiRoseCsv('\ufeffsquadra,idGiocatore,prezzo\r\n$,$,$\r\nRosario,5694,250\r\n\r\n   \r\nRosario,6752,  248 \r\n')
+v('BOM, CRLF e righe vuote non fanno danni', sporco.righe.length === 2, JSON.stringify(sporco.righe))
+v('l intestazione di un foglio di calcolo viene contata fra le ignorate', sporco.ignorate === 1, String(sporco.ignorate))
+v('gli spazi intorno ai campi si tolgono', sporco.righe[1].prezzo === 248 && sporco.righe[1].giocatoreId === 6752, JSON.stringify(sporco.righe[1]))
+
+const prezziStorti = leggiRoseCsv('A,5694,0\nA,6752,-3\nA,6215,2.6\n')
+v('un prezzo a zero o negativo diventa 1', prezziStorti.righe.slice(0, 2).every((r) => r.prezzo === 1), JSON.stringify(prezziStorti.righe))
+v('un prezzo con la virgola si arrotonda', prezziStorti.righe[2].prezzo === 3, String(prezziStorti.righe[2].prezzo))
+
+console.log('\n== Abbinamento delle squadre ==')
+const altraLega = leggiRoseCsv('$,$,$\nReal Sconcerto,5694,250\nIgnoti FC,6752,100\n')
+const statoVirgola = { ...stato, config: { teams: [{ id: 't1', name: 'Real, Sconcerto', isMine: true }, { id: 't2', name: 'Gennaro', isMine: false }] } }
+const perNome = abbinaRose(altraLega, statoVirgola)
+v('la squadra si riconosce anche se la virgola del nome era stata tolta', perNome.mappa['Real Sconcerto'] === 't1', JSON.stringify(perNome.mappa))
+v('un nome che non esiste resta da assegnare', perNome.squadreIgnote.join() === 'Ignoti FC', JSON.stringify(perNome.squadreIgnote))
+v('e la sua riga non entra fra gli acquisti', perNome.acquisti.length === 1 && perNome.acquisti[0].playerId === 5694)
+
+const conScelta = abbinaRose(altraLega, statoVirgola, { 'Ignoti FC': 't2' })
+v('la scelta a mano porta il blocco sulla squadra indicata',
+  conScelta.acquisti.some((a) => a.playerId === 6752 && a.teamId === 't2'), JSON.stringify(conScelta.acquisti))
+v('e non resta piu niente da assegnare', conScelta.squadreIgnote.length === 0)
+v('una scelta vuota lascia il blocco fuori di proposito',
+  abbinaRose(altraLega, statoVirgola, { 'Ignoti FC': '' }).acquisti.length === 1)
+v('una squadra inventata nella scelta non passa',
+  abbinaRose(altraLega, statoVirgola, { 'Ignoti FC': 't99' }).acquisti.length === 1)
+
+console.log('\n== Righe che non si possono usare ==')
+const strane = abbinaRose(leggiRoseCsv('Rosario,99999,10\nRosario,5694,250\nGennaro,5694,999\n'), stato)
+v('un id che non sta nel listone viene segnalato', strane.fuoriListone.join() === '99999', JSON.stringify(strane.fuoriListone))
+v('un giocatore in due rose viene segnalato', strane.doppioni.join() === '5694', JSON.stringify(strane.doppioni))
+v('e vale la prima riga, non l ultima',
+  strane.acquisti.length === 1 && strane.acquisti[0].teamId === 't1' && strane.acquisti[0].price === 250,
+  JSON.stringify(strane.acquisti))
+
+const conCeduto = abbinaRose(leggiRoseCsv('Rosario,5694,250\n'), {
+  ...stato,
+  players: stato.players.map((p) => (p.id === 5694 ? { ...p, ceduto: true } : p)),
+})
+v('chi e nel foglio Ceduti entra in rosa ma si fa notare', conCeduto.acquisti.length === 1 && conCeduto.ceduti === 1)
+
+console.log('\n== Come le rose lette si uniscono a quelle registrate ==')
+const giaInRosa = [
+  { playerId: 5694, teamId: 't1', price: 250, ts: 1000 },
+  { playerId: 6215, teamId: 't2', price: 20, ts: 2000 },
+]
+const dalFile = [
+  { playerId: 5694, teamId: 't2', price: 300, ts: 9000 },
+  { playerId: 6752, teamId: 't1', price: 7, ts: 9001 },
+]
+
+const sostituite = fondiAcquisti(giaInRosa, dalFile, true)
+v('sostituendo resta solo cio che c era nel file', JSON.stringify(sostituite) === JSON.stringify(dalFile), JSON.stringify(sostituite))
+
+const unite = fondiAcquisti(giaInRosa, dalFile, false)
+v('aggiungendo non si perde chi non era nel file', unite.some((a) => a.playerId === 6215 && a.price === 20))
+v('chi c era gia cambia squadra e prezzo', unite.some((a) => a.playerId === 5694 && a.teamId === 't2' && a.price === 300))
+v('ma conserva l orario della chiamata vera', unite.find((a) => a.playerId === 5694).ts === 1000, String(unite.find((a) => a.playerId === 5694).ts))
+v('chi arriva dal file tiene il suo orario', unite.find((a) => a.playerId === 6752).ts === 9001)
+v('nessun doppione dopo l unione', new Set(unite.map((a) => a.playerId)).size === unite.length)
 
 console.log(`\n${ok} superate, ${ko} fallite\n`)
 process.exit(ko === 0 ? 0 : 1)

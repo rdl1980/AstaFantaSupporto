@@ -246,6 +246,37 @@ tocco, quindi l'audio si sblocca proprio quando si preme l'interruttore; la pref
 su quel dispositivo. Si suona sui passaggi di fase, non a ogni ridisegno: senza quella accortezza il
 telefono farebbe un ronzio continuo.
 
+### Il turno di chiamata
+
+Molte leghe chiamano a giro: una squadra alla volta dice il nome del giocatore da mettere all'asta.
+Tenere il conto a voce è una fonte sicura di litigi — a metà asta nessuno ricorda se il giro era
+arrivato a chi si era alzato per il caffè. Dal Setup, **Turno di chiamata → a giro**, lo tiene il
+server.
+
+Il turno sta nella riga della sessione, non sui dispositivi: così tutti i telefoni mostrano lo stesso
+nome. Calcolarlo in locale vorrebbe dire otto schermi che si contraddicono appena uno perde un
+messaggio, che è precisamente il litigio da togliere. Sul telefono di chi tocca compare in grande
+**TOCCA A TE CHIAMARE**, con un tono di tre note che si distingue dal conteggio; sugli altri si legge
+il nome di chi deve chiamare.
+
+Il giro avanza da solo ogni volta che una chiamata si chiude, anche quando nessuno ha offerto: il
+turno è stato speso comunque. Avanza da chi **aveva il turno**, non da chi si è aggiudicato il
+giocatore — si chiama a turno, ma vince chi offre di più. Chi ha la rosa completa viene saltato,
+perché non ha più niente da chiamare; se sono complete tutte, il segnalino resta dov'è invece di
+girare a vuoto.
+
+**Annulla** invece non consuma il turno: lì si sta rimediando a una chiamata sbagliata — nome storto,
+giocatore già preso — e far scorrere il giro farebbe perdere il turno a chi non ha ancora chiamato per
+davvero.
+
+Nella barra del banditore il nome di chi chiama sta accanto al codice stanza, con **⏭** per passare
+la mano quando una chiamata non c'è stata — chi tocca rinuncia, o non è al tavolo. Nei dettagli
+(**▼**) c'è l'elenco delle squadre per spostare il segnalino dove sta davvero, e la voce *non si
+chiama a giro* per spegnerlo: il giro vero si inceppa, e rifare la sessione per rimettere a posto un
+turno sarebbe assurdo.
+
+Senza sessione live non c'è niente da mostrare, perché il turno vive sul server.
+
 ### Gli acquisti restano allineati nei due sensi
 
 Tutto il resto dell'app — rosa, budget, scarsità, moduli, report, export — legge gli acquisti
@@ -313,6 +344,33 @@ il separatore anche prima della prima squadra. Dettagli che contano perché dall
 lettore rigido, non un foglio di calcolo. All'interno di ogni squadra i giocatori escono per reparto
 e poi dal più caro, che è l'ordine con cui si legge una rosa; una virgola in un nome squadra viene
 tolta, perché il formato non prevede virgolette e spezzerebbe la riga.
+
+### Caricare rose già fatte
+
+Lo stesso formato si legge anche al contrario, dal Setup → **Rose da CSV**: serve per partire da una
+situazione invece che dal vuoto — le rose dell'anno scorso, o quelle di un'altra lega da usare come
+riferimento. I giocatori si riconoscono dall'`id` del listone, quindi il listone va importato prima.
+
+In scrittura il formato è rigido perché dall'altra parte c'è un lettore rigido; in lettura è il
+contrario, perché il file può arrivare dall'export del sito, da un foglio di calcolo o da una chat:
+BOM, fine riga `\r\n`, righe vuote e un'eventuale intestazione non sono motivi per rifiutare tutto il
+resto. Le righe che restano incomprensibili si contano e si dicono.
+
+L'accoppiamento delle squadre si mostra sempre, anche quando i nomi tornano tutti: ogni blocco del
+file ha accanto la squadra dell'asta a cui finisce, prescelta per nome e cambiabile a mano, oppure
+*non importare*. Indovinare dall'ordine di apparizione significherebbe assegnare una rosa intera alla
+persona sbagliata senza dirlo. Prima di caricare si legge quanti acquisti entrano, quali id non
+stanno nel listone di quest'anno, quali giocatori compaiono due volte (vale la prima riga) e quanti
+sono finiti nel foglio Ceduti: in rosa ma non più utilizzabili.
+
+Si sceglie se le rose del file **sostituiscono** gli acquisti già registrati — con loro vanno via
+anche gli svincoli, che parlerebbero di acquisti inesistenti — o se si **aggiungono**, lasciando a
+chi c'era già il suo orario di cronologia. Gli acquisti importati non hanno un orario vero: ne
+ricevono uno crescente nell'ordine in cui stanno scritti, così la cronologia resta leggibile e
+*Annulla ultimo* torna indietro dall'ultima riga.
+
+Con una sessione live collegata l'import è spento: lì comanda il tabellone sul server, e le rose
+caricate si disferebbero al primo allineamento.
 
 ## Asta a sorteggio
 

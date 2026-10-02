@@ -32,6 +32,9 @@ Fatto = presente nell'app; le altre voci non sono ancora implementate.
 - Mercato di riparazione: svincoli con rimborso configurabile, budget aggiuntivo,
   diff del listone di gennaio, rendimento della rosa e sostituti possibili
 - Sessione live che parte dalle rose gia' costruite
+- Turno di chiamata: chi chiama adesso, uguale su tutti i telefoni, con rotazione
+  automatica a ogni chiamata chiusa e salto di chi ha la rosa completa
+- Import delle rose da CSV: lo stesso formato dell'export, letto al contrario
 
 ## Priorità alta
 
@@ -88,31 +91,22 @@ Colonne configurabili nel listone, densità delle righe, dimensione del testo.
 ## Da valutare (proposte 2026-09-14)
 
 Idee messe sul tavolo dopo la prima asta live vera. Le prime quattro (pausa,
-suono, pressione, inflazione) sono state realizzate il 2026-09-14 e sono
-elencate fra le cose fatte; restano queste.
+suono, pressione, inflazione) sono state realizzate il 2026-09-14; il turno di
+chiamata e l'import delle rose da CSV il 2026-10-02. Sono tutte elencate fra le
+cose fatte; restano queste.
 
-### 1. Turno di chiamata
-Chi chiama adesso, visibile su tutti i telefoni, con rotazione automatica. Molte
-leghe chiamano a giro invece che a sorteggio, e tenere il conto a voce è una fonte
-sicura di litigi.
-
-### 2. Import delle rose da CSV
-L'inverso dell'export appena fatto: caricare rose già esistenti — quelle dell'anno
-scorso, o quelle di un'altra lega — per partire da una situazione e non dal vuoto.
-Stesso formato, letto al contrario.
-
-### 3. Storico prezzi fra le aste
+### 1. Storico prezzi fra le aste
 Salvare a quanto è andato davvero ogni giocatore, asta dopo asta. L'anno prossimo il
 prezzo suggerito nasce da quanto paga *la tua lega*, non dal listino: con 8 squadre e
 4000 crediti le distorsioni sono sempre le stesse e si ripetono. È l'unica voce che
 vale di più ogni anno che passa.
 
-### 4. App installabile sul telefono
+### 2. App installabile sul telefono
 Il terminale del partecipante come icona sulla schermata iniziale, con l'ultimo stato
 visibile anche se la linea cade. Toglie di mezzo il «qual era il link?» e la barra del
 browser, che su uno schermo piccolo si mangia lo spazio del conteggio.
 
-### 5. Annulla e ripeti completi
+### 3. Annulla e ripeti completi
 Oggi si annulla solo l'ultimo acquisto. In un'asta confusa capita di accorgersi tre
 chiamate dopo di aver scritto il prezzo sbagliato o la squadra sbagliata, e servirebbe
 tornare indietro di più passi senza rovinare la cronologia.

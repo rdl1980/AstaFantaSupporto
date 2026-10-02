@@ -152,6 +152,12 @@ export interface LeagueConfig {
   attesaOffertaMs: number
   /** Asta a sorteggio: pesca da tutto il listone o da un reparto alla volta */
   sorteggioAmbito: 'tutti' | 'ruolo'
+  /**
+   * La lega chiama a giro: nella sessione live il turno gira fra le squadre e si
+   * vede su tutti i telefoni. Senza sessione live non c'e' nulla da mostrare,
+   * perche' il giro vive sul server.
+   */
+  turnoChiamata: boolean
 }
 
 export interface AppState {

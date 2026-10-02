@@ -4,6 +4,7 @@ import type { Player } from '../types'
 import { liveDisponibile, oraServer } from './client'
 import { conteggio, durataTotale, etichetta } from './countdown'
 import { useEsitoRecente } from './esito'
+import { squadraDiTurno } from './derive'
 import {
   aggiornaImpostazioni,
   aggiudicaSeScaduta,
@@ -12,7 +13,9 @@ import {
   riprendiAsta,
   sospendiAsta,
   creaSessione,
+  impostaTurno,
   mettiAllAsta,
+  passaTurno,
   useLive,
 } from './session'
 import { useSincronizzaAcquisti } from './sync'
@@ -94,6 +97,9 @@ export function LiveAdminPanel({
   }, [cred, attiva, c?.fase])
 
   const nomeMigliore = live.squadre.find((s) => s.id === chiamata?.miglior_offerente_id)?.nome
+  // Il turno sta nella riga della sessione: lo decide il server e lo leggono
+  // tutti i telefoni, questa barra compresa.
+  const diTurno = squadraDiTurno(live.squadre, live.sessione?.turno)
 
   // Chi banditore sente il nome e lo digita: la ricerca sta qui, accanto al
   // pulsante, invece di obbligare a passare dal listone e da un secondo comando.
@@ -138,6 +144,9 @@ export function LiveAdminPanel({
         secondiDa2A3: config.secondiDa2A3,
         rilanciRapidi: config.rilanciRapidi,
         attesaOffertaMs: config.attesaOffertaMs,
+        // Il giro parte dalla prima squadra, che e' la tua: da li' si sposta con
+        // il comando nei dettagli, perche' chi apre il giro si decide al tavolo.
+        turno: config.turnoChiamata ? 1 : null,
         // A gennaio la sessione non nasce da zero: le rose gia' costruite entrano
         // subito, cosi' i controlli di slot e di offerta massima leggono la
         // situazione vera. Le rettifiche portano su le perdite degli svincoli,
@@ -220,6 +229,21 @@ export function LiveAdminPanel({
       <span className="muted small">
         {live.squadre.filter((s) => s.presa).length}/{live.squadre.length} collegati
       </span>
+
+      {diTurno && (
+        <span className="live-turno" title="Tocca a lui chiamare. Il giro avanza da solo a ogni chiamata chiusa">
+          <span className="muted small">chiama</span> <b>{diTurno.nome}</b>
+          <button
+            className="btn ghost small-btn"
+            onClick={() =>
+              void passaTurno(cred.sessioneId, cred.adminToken).catch((e) => setErrore(String(e.message)))
+            }
+            title="Passa la mano al prossimo senza aspettare una chiamata"
+          >
+            ⏭
+          </button>
+        </span>
+      )}
 
       {/* La pausa sta qui e non fra i comandi della chiamata: serve anche fra un
           giocatore e l'altro, che e' quando ci si alza da tavola. */}
@@ -336,6 +360,33 @@ export function LiveAdminPanel({
             Durata di una chiamata senza rilanci: <b>{durataTotale(timer)}s</b> — {timer.attesaSecondi}s di
             attesa, {timer.secondiDa1A2}s dall&apos;uno al due, {timer.secondiDa2A3}s dal due al tre e
             altrettanti prima dell&apos;aggiudicazione. Si cambia dal Setup.
+          </p>
+          <div className="live-azioni-extra">
+            <label className="small live-turno-scelta">
+              Chiama adesso
+              <select
+                value={live.sessione?.turno ?? ''}
+                onChange={(e) =>
+                  void impostaTurno(
+                    cred.sessioneId,
+                    cred.adminToken,
+                    e.target.value ? Number(e.target.value) : null,
+                  ).catch((err) => setErrore(String(err.message)))
+                }
+              >
+                <option value="">— non si chiama a giro</option>
+                {live.squadre.map((s) => (
+                  <option key={s.id} value={s.ordine}>
+                    {s.nome}
+                  </option>
+                ))}
+              </select>
+            </label>
+          </div>
+          <p className="muted small">
+            Il giro avanza da solo ogni volta che una chiamata si chiude, anche quando nessuno ha
+            offerto, e salta le squadre con la rosa completa. <b>⏭</b> passa la mano quando una
+            chiamata non c&apos;e&apos; stata.
           </p>
           <div className="live-azioni-extra">
             <button

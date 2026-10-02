@@ -1,5 +1,6 @@
 import { useRef, useState } from 'react'
 import { AuctionsCard } from './AuctionsManager'
+import { ImportRose } from './ImportRose'
 import { parseListone } from '../parseListone'
 import { useStore } from '../store'
 import type { ClassicRole, Mode } from '../types'
@@ -77,6 +78,8 @@ export function SetupScreen({ onDone }: { onDone: () => void }) {
         {importMsg && <p className="ok">{importMsg}</p>}
         {error && <p className="error">{error}</p>}
       </section>
+
+      <ImportRose />
 
       <section className="card">
         <h2>Regole della lega</h2>
@@ -378,6 +381,36 @@ export function SetupScreen({ onDone }: { onDone: () => void }) {
         <p className="muted small">
           Chi esce e non viene assegnato resta fuori dal mazzo, così non si ripresenta subito. Quando
           il mazzo finisce si rimescola da capo con quelli avanzati.
+        </p>
+      </section>
+
+      <section className="card">
+        <h2>Turno di chiamata</h2>
+        <p className="muted">
+          Molte leghe chiamano a giro: una squadra alla volta dice il nome del giocatore da mettere
+          all&apos;asta. Tenere il conto a voce è una fonte sicura di litigi, e qui lo tiene il server.
+        </p>
+        <div className="form-row">
+          <label>
+            Chi chiama
+            <select
+              value={config.turnoChiamata ? 'giro' : 'libero'}
+              onChange={(e) =>
+                dispatch({ type: 'setConfig', patch: { turnoChiamata: e.target.value === 'giro' } })
+              }
+            >
+              <option value="libero">Come viene, o a sorteggio</option>
+              <option value="giro">A giro, una squadra alla volta</option>
+            </select>
+          </label>
+        </div>
+        <p className="muted small">
+          Vale nella <b>sessione live</b>: il turno vive sul server, così tutti i telefoni mostrano lo
+          stesso nome — e a chi tocca arriva anche un tono. Il giro parte dalla prima squadra, avanza
+          da solo ogni volta che una chiamata si chiude (anche quando nessuno ha offerto) e salta le
+          squadre con la rosa completa. Dai dettagli della barra live lo si sposta a mano, lo si passa
+          con <b>⏭</b> quando una chiamata non c&apos;è stata, e si accende o spegne anche a sessione
+          avviata.
         </p>
       </section>
 

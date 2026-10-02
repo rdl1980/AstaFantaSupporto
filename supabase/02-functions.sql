@@ -84,6 +84,44 @@ begin
 end
 $$;
 
+-- A chi tocca chiamare dopo `p_da`, saltando chi ha la rosa completa: una
+-- squadra che non ha piu' slot non ha piu' niente da chiamare, e lasciarle il
+-- turno vorrebbe dire fermare il giro per farla passare a voce.
+--
+-- `p_da` fuori dai valori validi (o null) fa ripartire dalla prima squadra.
+create or replace function _prossimo_turno(p_sessione uuid, p_da int)
+returns int language plpgsql stable as $$
+declare
+  v_slot   int;
+  v_ordini int[];
+  v_n      int;
+  v_pos    int;
+  i        int;
+  v_cand   int;
+begin
+  select _slot_totali(slot_config, modalita) into v_slot from sessione where id = p_sessione;
+  select array_agg(ordine order by ordine) into v_ordini from squadra where sessione_id = p_sessione;
+  v_n := coalesce(array_length(v_ordini, 1), 0);
+  if v_n = 0 then
+    return null;
+  end if;
+
+  v_pos := coalesce(array_position(v_ordini, p_da), 0);
+
+  -- Si fa un giro solo: se tutte hanno la rosa completa l'asta e' finita e il
+  -- turno resta dov'era, invece di girare a vuoto.
+  for i in 1 .. v_n loop
+    v_cand := v_ordini[((v_pos + i - 1) % v_n) + 1];
+    if (select count(*) from assegnazione a
+          join squadra sq on sq.id = a.squadra_id
+          where sq.sessione_id = p_sessione and sq.ordine = v_cand) < v_slot then
+      return v_cand;
+    end if;
+  end loop;
+  return p_da;
+end
+$$;
+
 -- ---------------------------------------------------------------- sessione --
 
 create or replace function crea_sessione(
@@ -95,7 +133,10 @@ create or replace function crea_sessione(
   -- per `ordine`, perche' gli id non esistono ancora quando si chiama questa.
   p_assegnazioni jsonb default '[]'::jsonb,
   -- Scostamento dal budget, una voce per squadra nell'ordine in cui arrivano
-  p_rettifiche int[] default null
+  p_rettifiche int[] default null,
+  -- `ordine` della squadra che apre il giro delle chiamate. Null: la lega non
+  -- chiama a giro, e del turno non si parla piu' da nessuna parte.
+  p_turno int default null
 ) returns jsonb language plpgsql security definer as $$
 declare
   v_id     uuid;
@@ -116,10 +157,14 @@ begin
 
   insert into sessione (codice, nome, modalita, budget, slot_config, rilancio_minimo,
                         attesa_secondi, secondi_1_2, secondi_2_3,
-                        rilanci_rapidi, attesa_offerta_ms, stato)
+                        rilanci_rapidi, attesa_offerta_ms, stato, turno)
     values (v_codice, p_nome, p_modalita, p_budget, p_slot_config, p_rilancio_minimo,
             p_attesa_secondi, p_secondi_1_2, p_secondi_2_3,
-            p_rilanci_rapidi, p_attesa_offerta_ms, 'active')
+            p_rilanci_rapidi, p_attesa_offerta_ms, 'active',
+            -- Un turno fuori scala indicherebbe una squadra che non esiste, e il
+            -- giro resterebbe fermo su un nome che nessuno vede
+            case when p_turno is null then null
+                 else greatest(1, least(p_turno, coalesce(array_length(p_squadre, 1), 1))) end)
     returning id into v_id;
 
   insert into sessione_segreto (sessione_id, admin_token) values (v_id, v_admin);
@@ -259,6 +304,12 @@ begin
 end
 $$;
 
+-- Toglie il giocatore dall'asta senza aggiudicarlo.
+--
+-- Il turno non avanza, al contrario di quello che fa una chiamata chiusa: qui si
+-- sta rimediando a una chiamata sbagliata — nome storto, giocatore gia' preso —
+-- e far scorrere il giro vorrebbe dire far perdere il turno a chi non ha ancora
+-- chiamato per davvero.
 create or replace function annulla_chiamata(p_sessione uuid, p_admin_token text)
 returns jsonb language plpgsql security definer as $$
 begin
@@ -397,6 +448,12 @@ begin
                       scadenza = null, rimanenza_ms = null, versione = versione + 1
     where sessione_id = p_sessione;
 
+  -- Chiamata chiusa, il giro avanza. Da chi aveva il turno, non da chi si e'
+  -- aggiudicato il giocatore: si chiama a turno, ma vince chi offre di piu'.
+  -- Vale anche quando nessuno ha offerto: il turno e' stato speso comunque.
+  update sessione set turno = _prossimo_turno(p_sessione, turno)
+    where id = p_sessione and turno is not null;
+
   return jsonb_build_object('ok', true, 'squadra_id', c.miglior_offerente_id,
                             'prezzo', c.offerta_attuale, 'giocatore_id', c.giocatore_id);
 end
@@ -434,8 +491,58 @@ begin
                       scadenza = null, rimanenza_ms = null, versione = versione + 1
     where sessione_id = p_sessione;
 
+  -- Chiamata chiusa, il giro avanza. Da chi aveva il turno, non da chi si e'
+  -- aggiudicato il giocatore: si chiama a turno, ma vince chi offre di piu'.
+  -- Vale anche quando nessuno ha offerto: il turno e' stato speso comunque.
+  update sessione set turno = _prossimo_turno(p_sessione, turno)
+    where id = p_sessione and turno is not null;
+
   return jsonb_build_object('ok', true, 'squadra_id', c.miglior_offerente_id,
                             'prezzo', c.offerta_attuale, 'giocatore_id', c.giocatore_id);
+end
+$$;
+
+-- ------------------------------------------------------- turno di chiamata --
+
+-- Sposta il turno su una squadra precisa, o lo spegne con `p_ordine` null.
+--
+-- Serve perche' il giro vero si inceppa: qualcuno passa, qualcuno chiama fuori
+-- turno, e il banditore deve poter rimettere il segnalino dove sta davvero senza
+-- ricostruire la sessione.
+create or replace function imposta_turno(p_sessione uuid, p_admin_token text, p_ordine int)
+returns jsonb language plpgsql security definer as $$
+begin
+  if not exists (select 1 from sessione_segreto
+                 where sessione_id = p_sessione and admin_token = p_admin_token) then
+    return jsonb_build_object('ok', false, 'motivo', 'non_autorizzato');
+  end if;
+  if p_ordine is not null and not exists (
+       select 1 from squadra where sessione_id = p_sessione and ordine = p_ordine) then
+    return jsonb_build_object('ok', false, 'motivo', 'squadra_inesistente');
+  end if;
+  update sessione set turno = p_ordine where id = p_sessione;
+  return jsonb_build_object('ok', true, 'turno', p_ordine);
+end
+$$;
+
+-- Passa la mano al prossimo. Il giro avanza da solo a ogni chiamata chiusa:
+-- questa serve quando una chiamata non c'e' stata — chi tocca rinuncia, o si
+-- salta chi non e' al tavolo.
+create or replace function passa_turno(p_sessione uuid, p_admin_token text)
+returns jsonb language plpgsql security definer as $$
+declare v_turno int;
+begin
+  if not exists (select 1 from sessione_segreto
+                 where sessione_id = p_sessione and admin_token = p_admin_token) then
+    return jsonb_build_object('ok', false, 'motivo', 'non_autorizzato');
+  end if;
+  select turno into v_turno from sessione where id = p_sessione;
+  if v_turno is null then
+    return jsonb_build_object('ok', false, 'motivo', 'turno_spento');
+  end if;
+  v_turno := _prossimo_turno(p_sessione, v_turno);
+  update sessione set turno = v_turno where id = p_sessione;
+  return jsonb_build_object('ok', true, 'turno', v_turno);
 end
 $$;
 

@@ -42,6 +42,11 @@ export async function creaSessione(args: {
   }[]
   /** Scostamento dal budget, una voce per squadra nell'ordine di `squadre` */
   rettifiche?: number[]
+  /**
+   * `ordine` della squadra che apre il giro delle chiamate, null se la lega non
+   * chiama a giro.
+   */
+  turno?: number | null
 }): Promise<{ sessioneId: string; codice: string; adminToken: string }> {
   const { data, error } = await client().rpc('crea_sessione', {
     p_nome: args.nome,
@@ -57,6 +62,7 @@ export async function creaSessione(args: {
     p_attesa_offerta_ms: args.attesaOffertaMs,
     p_assegnazioni: args.assegnazioni ?? [],
     p_rettifiche: args.rettifiche ?? null,
+    p_turno: args.turno ?? null,
   })
   if (error) throw new Error(error.message)
   if (!data?.ok) throw new Error(data?.motivo ?? 'creazione fallita')
@@ -178,6 +184,34 @@ export async function sospendiAsta(sessioneId: string, adminToken: string) {
 /** Riprende dal punto esatto in cui si era fermata. */
 export async function riprendiAsta(sessioneId: string, adminToken: string) {
   const { data, error } = await client().rpc('riprendi_asta', {
+    p_sessione: sessioneId,
+    p_admin_token: adminToken,
+  })
+  if (error) throw new Error(error.message)
+  return data
+}
+
+/**
+ * Sposta il turno su una squadra precisa, per `ordine`. Con `ordine` null il
+ * giro si spegne.
+ */
+export async function impostaTurno(sessioneId: string, adminToken: string, ordine: number | null) {
+  const { data, error } = await client().rpc('imposta_turno', {
+    p_sessione: sessioneId,
+    p_admin_token: adminToken,
+    p_ordine: ordine,
+  })
+  if (error) throw new Error(error.message)
+  return data
+}
+
+/**
+ * Passa la mano al prossimo. Il giro avanza da solo a ogni chiamata chiusa:
+ * questa serve quando una chiamata non c'e' stata, perche' chi tocca rinuncia o
+ * non e' al tavolo.
+ */
+export async function passaTurno(sessioneId: string, adminToken: string) {
+  const { data, error } = await client().rpc('passa_turno', {
     p_sessione: sessioneId,
     p_admin_token: adminToken,
   })
